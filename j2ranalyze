@@ -1,0 +1,2 @@
+#!/bin/sh
+R --vanilla < utils/commandr
