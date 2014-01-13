@@ -25,6 +25,8 @@ class PostProcessor(object):
             return Hammersley(obj)
         elif n_type == "expression":
             return Expression(obj)
+        elif n_type == "counter":
+            return Counter(obj)
         else:
             raise ValueError("Unrecognized post-processor type \""+n_type+"\"")
 
@@ -175,7 +177,35 @@ class Rounding(PostProcessor):
         repr += ", ".join(roundings)
         repr += '} }'
         return repr
-        
+
+class Counter(PostProcessor):
+    """A postprocessor to generate an unique incremental index to each generated configuration."""
+
+    def __init__(self, obj = None):
+        """Constructor, initializes counter"""
+
+        super(Counter, self).__init__(obj)
+
+        if obj != None:
+            self.name = obj["name"]
+
+            if "init" in obj:
+                self.init = int(obj["init"])
+            else:
+                self.init = 0
+
+            self.counter = self.init
+
+
+    def __repr__(self):
+        return '{ "type": "counter", "name": '+ str(self.name) +', "init": '+ str(self.init) +' }'
+
+    def process(self, params):
+
+        params.append(Parameter(self.name, self.counter))
+        self.counter += 1
+        return params
+
 class Hammersley(PostProcessor):
     """A postprocessor to generate the Hammersley point set in a d-dimensional interval."""
     
@@ -234,7 +264,7 @@ class Hammersley(PostProcessor):
         point = []
         point.append(float(k)/float(self.points))
         
-        for i in xrange(d):
+        for i in xrange(d-1):
             p = Hammersley.primes[i]
             pi, ki, phi = float(p), float(k), 0.0
             
@@ -245,8 +275,6 @@ class Hammersley(PostProcessor):
                 pi *= float(p)
                 
             point.append(phi)
-            
-        print point
             
         return point    
     

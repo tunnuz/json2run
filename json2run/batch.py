@@ -49,7 +49,12 @@ class Batch(Persistent):
         self.initialized = False
         self.running = []
         self.enqueued = []
-        
+ 
+    def update_generator(self, pex):
+
+        self.generator = pex
+        self["generator"] = str(self.generator)
+
     def initialize_experiments(self):
         """Initialize generator."""
 
@@ -322,8 +327,7 @@ class Race(Batch):
 
     def set_generator(self, pex):
         
-        self.generator = pex
-        self["generator"] = str(self.generator)
+        self.update_generator(pex)
         self.initialize_experiments()
 
     def run(self, thread_n = cpu_count(), greedy = False, alpha = 0.05):

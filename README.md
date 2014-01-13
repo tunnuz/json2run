@@ -34,7 +34,7 @@ An experiment file such as the one above describes the parameters that must be g
 
 * printing the generated configurations as command line options,
 * running a batch of experiments based on the generated configurations,
-* store the results of the experiments in a database, 
+* storing the results of the experiments in a database, 
 * running a parameter race (see[^frace]) to find out the configurations (or configuration) that optimize a function of quality,
 * retrieving the results of the experiments from the database.
 
@@ -463,6 +463,19 @@ Rename post-processors can be used to rename parameters. The syntax, somewhat si
 	}
 	
 Where `old_k` are the original name of the parameters we want to rename and `new_k` are the new ones. Note that unlike `rounding`'s compact syntax, here `rename` is an object, not an array. Also, `old_k` are plain strings, not regular expressions.
+
+
+##### `counter` processors
+
+Counter post processors can be used to generate a unique id for every configuration, the syntax is the following:
+
+	{
+		"type": "counter",
+		"name": "<counter_name>",
+		"init": 5
+	}
+	
+The counter will generate an incremental number starting from `init` for each configuration that is processed. Of course, by putting counter processors deep in the JSON tree, it is possible to generate counters for specific parameters or set of parameters. `init` is auxiliary, in case it is not specified, the counter will start from 0.
 
 ### The `j2r` command line tool
 

@@ -31,10 +31,13 @@ getExperiments <- function(batch, fromScratch = TRUE, instance_param = c("main_i
     batch <- dbGetQueryForKeys(db_connection, "batches", sprintf('{ "name": "%s" }', batch), '{ "type": 1, "configurations": 1, "instance_parameter": 1 }')
     batch_id = batch$X_id
     
+    if (is.na(batch$instance_parameter))
+        batch$instance_parameter <- instance_param
+    
     # instance parameters are known for races
     if (batch$type == "race")
         instance_param = c(batch$instance_parameter, "repetition")
-    
+        
     instance_param <- c(normalize_name(instance_param), "repetition")
     
     if (is.null(batch_id))
@@ -114,8 +117,8 @@ getExperiments <- function(batch, fromScratch = TRUE, instance_param = c("main_i
         
         # generating configurations
         writeLines("Generating configurations ...")
+
         conf_params <- parameters[which(parameters %ni% instance_param)]
-                
         experiments <- add_conf(experiments, conf_params)
         
         # pruned / winning

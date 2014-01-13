@@ -362,6 +362,33 @@ def main():
         
         batch.save()
         
+    elif args.action == "set-generator":
+        
+        if not args.batch_name:
+            log.error("You need to provide a batch name.")
+            sys.exit(1)
+
+        if not args.input:
+            log.error("You need to provide a new JSON file.")
+            sys.exit(1)
+        
+        batch = None
+
+        try:
+            batch = Batch(False)
+            batch.load(Batch.get({ "name": args.batch_name }).next())
+        except:
+            log.error("Error loading batch.")
+            sys.exit(1)
+        
+        pex = from_file(args.input)
+        batch.update_generator(pex) 
+
+        # mark unfinished (in general)
+        batch["date_stopped"] = batch["date_started"]
+
+        batch.save()
+
     # batch info
     elif args.action == "batch-info":
         
@@ -484,7 +511,7 @@ def prepare_args(parser):
     """Prepare the arguments for the program"""
     parser.add_argument("--input", "-i", required = False, type=str, help="the JSON input file")
     parser.add_argument("--executable", "-e", required = False, type=str, help="the executable to use")
-    parser.add_argument("--action", "-a", required = False, type=str, default = "print-cll", choices=["batch-info", "show-best", "mark-unfinished", "rename-batch", "delete-batch", "dump-experiments", "show-winning", "run-batch", "run-race", "list-batches", "print-cll", "print-csv", "set-repetitions"], help="the action to execute")
+    parser.add_argument("--action", "-a", required = False, type=str, default = "print-cll", choices=["batch-info", "show-best", "mark-unfinished", "rename-batch", "delete-batch", "dump-experiments", "show-winning", "run-batch", "run-race", "list-batches", "print-cll", "print-csv", "set-repetitions", "set-generator"], help="the action to execute")
     parser.add_argument("--repetitions", "-r", required = False, type=int, default = 1, help="number of repetitions of each experiment on a single instance")
     parser.add_argument("--instance-param", "-ip", required = False, type=str, help="name of the parameter representing the instance in a race")
     parser.add_argument("--performance-param", "-pp", required = False, type=str, help="name of the parameter representing the performance metric in a races")
