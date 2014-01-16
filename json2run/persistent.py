@@ -75,6 +75,10 @@ class Persistent(object):
         """Subscript setter."""
         self.inner[field] = value
         
+    def __contains__(self, field):
+        """Checks whether container has item."""
+        return field in self.inner
+
     def save(self):
         """Upsert inner object."""
         
