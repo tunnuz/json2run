@@ -169,12 +169,15 @@ def main():
     elif args.action == "list-batches":
         
         fields = ["Name", "Completion", "Host", "User", "Type", "Started", "Finished"]
-        
+
         batches = None
         if args.filter:
-            batches = Batch.get({"name": { "$regex": args.filter  }  }).sort("date_started")
+            batches = Batch.get({"name": { "$regex": args.filter  }}).sort("date_started", -1)
         else:
-            batches = Batch.get({}).sort("date_started")
+            batches = Batch.get({}).sort("date_started", -1)
+
+        if args.limit != 0:
+            batches.limit(args.limit)
       
         print "Batches matching criteria: ", batches.count()
         
@@ -534,6 +537,7 @@ def prepare_args(parser):
     parser.add_argument("--filter", "-f", required = False, type = str, help="filter printouts")
     parser.add_argument("--separator", "-sep", required = False, type = str, default=ParameterExpression.def_separator, help="separator character(s) for arguments")
     parser.add_argument("--stats", "-st", required = False, type = str, nargs="+", help="list of stats to export in CSV")
+    parser.add_argument("--limit", "-l", required = False, type = int, default=0, help="how many batches to show in the list")
 
     
     parser.add_help = True
