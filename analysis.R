@@ -50,7 +50,7 @@ getExperiments <- function(batch, fromScratch = TRUE, instance_param = c("main_i
 
     confs <- extract_confs(batch)
 
-    experiments <- NULL
+    experiments <- data.frame()
     writeLines(sprintf("Getting experiments for batch %s", batch$name))
 
     # if cache file exists
