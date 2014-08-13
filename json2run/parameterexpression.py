@@ -59,79 +59,96 @@ class ParameterExpression(object):
                 return Or({ "type": "or", "descendants": obj["or"] })
         
             if "on" in obj:
-                if "hammersley" in obj:  
-                    return Processor(
-                        PostProcessor.from_obj(
-                        { 
-                            "type": "hammersley", 
-                            "points": obj["hammersley"]
-                        }), 
-                        ParameterExpression.from_obj(obj["on"])
-                    )
-
-                if "rounding" in obj:
-                    return Processor(
-                        PostProcessor.from_obj(
-                        { 
-                            "type": "rounding", 
-                            "round": obj["rounding"]
-                        }), 
-                        ParameterExpression.from_obj(obj["on"])
-                    )
-                
-                if "rename" in obj:
-                    return Processor(
-                        PostProcessor.from_obj(
-                        { 
-                            "type": "renaming", 
-                            "rename": obj["rename"]
-                        }), 
-                        ParameterExpression.from_obj(obj["on"])
-                    )
-                    
-                if "counter" in obj:
-                    return Processor(
-                        PostProcessor.from_obj(
-                        { 
-                            "type": "counter",
-                            "name": obj["counter"],
-                            "init": obj["init"]
-                        }), 
-                        ParameterExpression.from_obj(obj["on"])
-                    )
-                    
-                if "sort" in obj:
-                    return Processor(
-                        PostProcessor.from_obj(
-                        { 
-                            "type": "sorting",
-                            "order": obj["sort"]
-                        }), 
-                        ParameterExpression.from_obj(obj["on"])
-                    )
-                    
-                if "ignore" in obj:
-                    return Processor(
-                        PostProcessor.from_obj(
-                        { 
-                            "type": "ignore",
-                            "match": obj["ignore"]
-                        }), 
-                        ParameterExpression.from_obj(obj["on"])
-                    )
-                
-                # must be expression
                 try:
-                    return Processor(
-                        PostProcessor.from_obj(
-                        { 
-                            "type": "expression",
-                            "expression": obj[name],
-                            "match": None,
-                            "result": name
-                        }), 
-                        ParameterExpression.from_obj(obj["on"])
-                    )
+                
+                    if "hammersley" in obj:  
+                        return Processor(
+                            PostProcessor.from_obj(
+                            { 
+                                "type": "hammersley", 
+                                "points": obj["hammersley"]
+                            }), 
+                            ParameterExpression.from_obj(obj["on"])
+                        )
+
+                    if "rounding" in obj:
+                        return Processor(
+                            PostProcessor.from_obj(
+                            { 
+                                "type": "rounding", 
+                                "round": obj["rounding"]
+                            }), 
+                            ParameterExpression.from_obj(obj["on"])
+                        )
+                
+                    if "rename" in obj:
+                        return Processor(
+                            PostProcessor.from_obj(
+                            { 
+                                "type": "renaming", 
+                                "rename": obj["rename"]
+                            }), 
+                            ParameterExpression.from_obj(obj["on"])
+                        )
+                    
+                    if "counter" in obj:
+                        return Processor(
+                            PostProcessor.from_obj(
+                            { 
+                                "type": "counter",
+                                "name": obj["counter"],
+                                "init": obj["init"]
+                            }), 
+                            ParameterExpression.from_obj(obj["on"])
+                        )
+                    
+                    if "sort" in obj:
+                        return Processor(
+                            PostProcessor.from_obj(
+                            { 
+                                "type": "sorting",
+                                "order": obj["sort"]
+                            }), 
+                            ParameterExpression.from_obj(obj["on"])
+                        )
+                    
+                    if "ignore" in obj:
+                        return Processor(
+                            PostProcessor.from_obj(
+                            { 
+                                "type": "ignore",
+                                "match": obj["ignore"]
+                            }), 
+                            ParameterExpression.from_obj(obj["on"])
+                        )
+                
+                    # must be expression
+                    if type(obj[name]) == list:
+                        
+                        # interval expression
+                        return Processor(
+                            PostProcessor.from_obj(
+                            { 
+                                "type": "expression",
+                                "min": obj[name][0],
+                                "min": obj[name][1],
+                                "match": None,
+                                "result": name
+                            }), 
+                            ParameterExpression.from_obj(obj["on"])
+                        )
+                    else:
+                        # discrete expression
+                        return Processor(
+                            PostProcessor.from_obj(
+                            { 
+                                "type": "expression",
+                                "expression": obj[name],
+                                "match": None,
+                                "result": name
+                            }), 
+                            ParameterExpression.from_obj(obj["on"])
+                        )
                 except Exception as e:
                     raise ValueError("Unrecognized postprocessor, %s" % e)
                         
