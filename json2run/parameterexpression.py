@@ -23,24 +23,137 @@ class ParameterExpression(object):
     @staticmethod
     def from_obj(obj):
         """Generates a parameter expression from a JSON parse."""
+
+        # batch definition language: version 1
+        if "type" in obj:
+            n_type = obj["type"]
+            if n_type == "and":
+                return And(obj)
+            elif n_type == "or":
+                return Or(obj)
+            elif n_type == "continuous":
+                return Continuous(obj)
+            elif n_type == "discrete":
+                return Discrete(obj)
+            elif n_type == "file":
+                return File(obj)
+            elif n_type == "directory":
+                return Directory(obj)
+            elif n_type == "flag":
+                return Flag(obj)
+            else:
+                raise ValueError("Unrecognized node type \""+n_type+"\"")
         
-        n_type = obj["type"]
-        if n_type == "and":
-            return And(obj)
-        elif n_type == "or":
-            return Or(obj)
-        elif n_type == "continuous":
-            return Continuous(obj)
-        elif n_type == "discrete":
-            return Discrete(obj)
-        elif n_type == "file":
-            return File(obj)
-        elif n_type == "directory":
-            return Directory(obj)
-        elif n_type == "flag":
-            return Flag(obj)
+        # batch definition language: version 2 (compact, incomplete)
         else:
-            raise ValueError("Unrecognized node type \""+n_type+"\"")
+            name = [k for k in obj.keys() if k is not "match" ][0] 
+            
+            if "and" in obj and type(obj["and"]) == list:
+                if "postprocessors" in obj:
+                    return And({ "type": "and", "descendants": obj["and"], "postprocessors": obj["postprocessors"] })
+                return And({ "type": "and", "descendants": obj["and"] })
+            
+            if "or" in obj and type(obj["or"]) == list:
+                if "postprocessors" in obj:
+                    return Or({ "type": "or", "descendants": obj["or"], "postprocessors": obj["postprocessors"] })
+                return Or({ "type": "or", "descendants": obj["or"] })
+        
+            if "on" in obj:
+                if "hammersley" in obj:  
+                    return Processor(
+                        PostProcessor.from_obj(
+                        { 
+                            "type": "hammersley", 
+                            "points": obj["hammersley"]
+                        }), 
+                        ParameterExpression.from_obj(obj["on"])
+                    )
+
+                if "rounding" in obj:
+                    return Processor(
+                        PostProcessor.from_obj(
+                        { 
+                            "type": "rounding", 
+                            "round": obj["rounding"]
+                        }), 
+                        ParameterExpression.from_obj(obj["on"])
+                    )
+                
+                if "rename" in obj:
+                    return Processor(
+                        PostProcessor.from_obj(
+                        { 
+                            "type": "renaming", 
+                            "rename": obj["rename"]
+                        }), 
+                        ParameterExpression.from_obj(obj["on"])
+                    )
+                    
+                if "counter" in obj:
+                    return Processor(
+                        PostProcessor.from_obj(
+                        { 
+                            "type": "counter",
+                            "name": obj["counter"],
+                            "init": obj["init"]
+                        }), 
+                        ParameterExpression.from_obj(obj["on"])
+                    )
+                    
+                if "sort" in obj:
+                    return Processor(
+                        PostProcessor.from_obj(
+                        { 
+                            "type": "sorting",
+                            "order": obj["sort"]
+                        }), 
+                        ParameterExpression.from_obj(obj["on"])
+                    )
+                    
+                if "ignore" in obj:
+                    return Processor(
+                        PostProcessor.from_obj(
+                        { 
+                            "type": "ignore",
+                            "match": obj["ignore"]
+                        }), 
+                        ParameterExpression.from_obj(obj["on"])
+                    )
+                
+                # must be expression
+                try:
+                    return Processor(
+                        PostProcessor.from_obj(
+                        { 
+                            "type": "expression",
+                            "expression": obj[name],
+                            "match": None,
+                            "result": name
+                        }), 
+                        ParameterExpression.from_obj(obj["on"])
+                    )
+                except Exception as e:
+                    raise ValueError("Unrecognized postprocessor, %s" % e)
+                        
+            if type(obj[name]) == list:
+                return Discrete({ "name": name, "values": obj[name] })
+            
+            if type(obj[name]) == str or type(obj[name]) == unicode:
+                                
+                match = None
+                if "match" in obj:
+                    match = obj["match"]
+                
+                path = obj[name]
+                if os.path.isdir(path):
+                    return Directory({ "name": name, "path": path, "match": match })
+                if os.path.isfile(path):
+                    return File({ "name": name, "path": path, "match": match })
+            if type(obj[name]) == dict or type(obj[name]) == collections.OrderedDict:
+                if "step" in obj[name]:
+                    return Discrete({ "name": name, "values": obj[name] })
+                else:
+                    return Continuous({ "name": name, "values": obj[name] })
 
     @staticmethod
     def format(executable = None, params = [], separator = None, prefix = None, name = True):
@@ -136,6 +249,46 @@ class ParameterExpression(object):
         
     def pop_descendant(self, name):
         """Gets and removes a descendant with a specific name."""
+
+class Processor(ParameterExpression):
+    
+    def __init__(self, postprocessor = None, subject = None):
+        """Generic constructor for Processor nodes, rewire PostProcessor to process parameter lists generated by subject."""
+        
+        if postprocessor and subject:
+
+            super(Processor, self).__init__(None)
+        
+            self.postprocessor = postprocessor
+            self.subject = subject
+        
+        # reset subcomponents
+        self.subject.__init__()
+        self.postprocessor.__init__()
+        self.flat_values = []
+        
+    def has_more(self):
+        return self.postprocessor.has_more(self.flat_values) or self.subject.has_more()
+        
+    def next(self):
+        """Generic parameter generation for inner nodes (call subcomponents, then postprocessors)."""
+        
+        # if postprocessors are inservible
+        if not self.postprocessor.has_more(self.flat_values):
+
+            # generate values through subcomponents
+            self.flat_values = self.subject.next()
+            
+            # reset postprocessor (at each new value generated by descendants)
+            self.postprocessor.__init__()
+            
+        # postprocess values (at least once)           
+        values = self.postprocessor.process(self.flat_values)
+        
+        return values
+
+    def has_continuous(self):
+        return self.subject.has_continuous()
 
 class Inner(ParameterExpression):
     
@@ -392,7 +545,7 @@ class Directory(Discrete):
     
     def __init__(self, obj = None):
         """Generates a list of files."""
-        
+                
         super(Discrete, self).__init__(obj)
 
         self.explicit = True
@@ -401,12 +554,17 @@ class Directory(Discrete):
             self.values = []
             self.name = obj["name"]
             self.path = obj["path"]
-            self.match = re.compile(obj["match"])
+            
+            if obj["match"]:
+                self.match = re.compile(obj["match"])
+            else:
+                self.match = None
             
             if os.path.isdir(self.path):
                 for file in os.listdir(self.path):
-                    if os.path.isfile(os.path.join(self.path, file)) and self.match.match(file) != None:
-                        self.values.append(os.path.join(self.path, file))
+                    if os.path.isfile(os.path.join(self.path, file)):
+                        if (self.match and self.match.match(file) != None) or not self.match:
+                            self.values.append(os.path.join(self.path, file))
 
             if not self.values:
                 raise ValueError("No values generated, check your JSON or %s." % self.path)
@@ -425,12 +583,16 @@ class File(Discrete):
             self.values = []
             self.name = obj["name"]
             self.path = obj["path"]
-            self.match = re.compile(obj["match"])
+            
+            if obj["match"]:
+                self.match = re.compile(obj["match"])
+            else:
+                self.match = None            
             
             if os.path.isfile(self.path):
                 file = open(self.path, "r")
                 for line in file:
-                    if self.match.match(line.rstrip()) != None:
+                    if (self.match and self.match.match(line.rstrip()) != None) or not self.match:
                         self.values.append(line.rstrip())
                         
             if not self.values:

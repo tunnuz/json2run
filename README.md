@@ -71,6 +71,8 @@ this will allow you to update to the latest version by just running
     
 in the root directory.
 
+Moreover, **json2run** must be able to access a MongoDB database called `j2r` with user `j2r` and password `j2r`. These parameters can be overridden from the command line, i.e., it is possible to have multiple databases on multiple machines, with different users.
+
 ## Usage
 
 Since **json2run** is designed to be very flexible (its only requirements being that you expose all the parameters of your executable and that you have access to a MongoDB instance), this also means that it comes with a lot of options. We will go through them in the following sections, but if you just need a quick reference type

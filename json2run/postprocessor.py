@@ -12,23 +12,24 @@ class PostProcessor(object):
         """Generates postprocessor from JSON object."""
     
         # dispatch postprocessor type
-        n_type = obj["type"]
-        if n_type == "ignore":
-            return Ignore(obj)
-        if n_type == "sorting":
-            return Sort(obj)
-        elif n_type == "rounding":
-            return Rounding(obj)
-        elif n_type == "renaming":
-            return Rename(obj)
-        elif n_type == "hammersley":
-            return Hammersley(obj)
-        elif n_type == "expression":
-            return Expression(obj)
-        elif n_type == "counter":
-            return Counter(obj)
-        else:
-            raise ValueError("Unrecognized post-processor type \""+n_type+"\"")
+        if "type" in obj:
+            n_type = obj["type"]
+            if n_type == "ignore":
+                return Ignore(obj)
+            if n_type == "sorting":
+                return Sort(obj)
+            elif n_type == "rounding":
+                return Rounding(obj)
+            elif n_type == "renaming":
+                return Rename(obj)
+            elif n_type == "hammersley":
+                return Hammersley(obj)
+            elif n_type == "expression":
+                return Expression(obj)
+            elif n_type == "counter":
+                return Counter(obj)
+            else:
+                raise ValueError("Unrecognized post-processor type \""+n_type+"\"")
 
     def process(self, params):
         """Default behaviour, return list of processed params."""        
@@ -304,7 +305,10 @@ class Expression(PostProcessor):
         
         if obj != None:
             
-            self.pattern = re.compile(obj["match"])
+            if obj["match"]:
+                self.pattern = re.compile(obj["match"])
+            else:
+                self.pattern = None
             self.result = obj["result"]
             
             if "expression" in obj:
@@ -322,21 +326,32 @@ class Expression(PostProcessor):
         """Process list of parameters."""
         
         # localize captured parameters (previously done by writing locals(), now changed to support arbitrary variable names)
-        captured = { p.name: p for p in params if self.pattern.match(p.name) != None}
-                            
+        if self.pattern:
+            captured = { p.name: p for p in params if self.pattern.match(p.name) != None}
+        else:
+            captured = { p.name: p for p in params }
+                
         # compute result, add new parameter
         try:
             # remove old parameter, if same name
-            if (self.pattern.match(self.result)):
+            if self.pattern and (self.pattern.match(self.result)):
                 params = filter(lambda x: x.name != self.result, params)
-                
+            
+            
             if not self.interval:
-                expression = self.expression
-                for p in captured:
-                    expression = re.sub(re.compile("%s\." % p), "captured[\"%s\"]." % p, expression)
-                result = eval(expression)
-                params.append(Parameter(self.result, result, self.separator, self.prefix))
+                
+                try:
+                    expression = self.expression
+                    for p in captured:
+                        expression = re.sub(re.compile("%s\." % p), "captured[\"%s\"]." % p, expression)
+                    
+                    result = eval(expression)
+                    params.append(Parameter(self.result, result, self.separator, self.prefix))
+                except:
+                    pass
+                
             else:
+                
                 min_e = self.min
                 max_e = self.max
                 
@@ -350,6 +365,7 @@ class Expression(PostProcessor):
                 params.append(IntervalParameter(self.result, min_v, max_v, self.separator, self.prefix))
                     
         except Exception, e:
+            print e
             return params
             
         return params
