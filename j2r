@@ -39,12 +39,13 @@ def main():
 
     # action dispatching
     if args.action == "print-cll" or args.action == "print-csv":
-
+        
         if not args.input:
             log.error("You need to provide a source JSON file.")
             sys.exit(1)
 
         pex = from_file(args.input)
+        print pex
                
         if args.action == "print-cll":
             while pex.has_more():
