@@ -45,7 +45,6 @@ def main():
             sys.exit(1)
 
         pex = from_file(args.input)
-        print pex
                
         if args.action == "print-cll":
             while pex.has_more():
