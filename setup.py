@@ -12,5 +12,5 @@ setup(
         "pymongo",
         "scipy"
     ],
-    scripts = ["./j2r", "./j2ranalyze"]
+    scripts = ["./j2r"]
 )
