@@ -29,7 +29,6 @@
 		]
 	}
 
-
 An experiment file such as the one above describes the parameters that must be generated and passed over to the executable. We'll call a set of generated parameters a *configuration* or *parameter configuration*. Once the experiments have been described, **json2run** can parse the file and perform various operations with it, such as
 
 * printing the generated configurations as command line options,
@@ -49,11 +48,23 @@ In the first case, the outcome of our above example would be something like this
 
 **json2run** supports a number of different types of nodes in the JSON tree, including: nodes for generating parameters from a discrete set of variables, nodes for generating parameters from the content of a directory or a file, nodes for sampling values from an interval, and so on. If something cannot be expressed with simple parameter generators, a number of **post-processors** allow you to mix, merge and discard the generated parameters in extremely flexible ways. Most post-processors were created because something couldn't be expressed with simple logical operators, but **json2run** slowly converged to something complete now.
 
+
+
 The experiments results are stored on a (MongoDB) database, in order to be accessed later for analysis. The choice of MongoDB comes from the necessity of comparing algorithms which can have different (and a different number of) parameters, and a using a tabular storage (as in most relational database) would make queries much more difficult.
 
 Finally, **json2run** comes with a very general but handy R script, which allows to gather data from the database, and do whatever kind of statistical analysis over it.
 
 ## Installation
+
+### Prerequisites
+
+* MongoDB
+* PyMongo
+* NumPy
+* SciPy
+* R with `plyr` and `ggplot2` libraries (for analysis) 
+
+### Setup
 
 Being packaged as a python module, the installation of **json2run** should be quite straightforward, just ensure that the `bson` python module is not installed on your system (if this is the case, run `sudo pip uninstall bson`) since `pymongo` comes with its own `bson.*` classes and conflicts may occur. Then, clone the (Mercurial) repository and run the python installer
 
@@ -71,7 +82,7 @@ this will allow you to update to the latest version by just running
     
 in the root directory.
 
-Moreover, **json2run** must be able to access a MongoDB database called `j2r` with user `j2r` and password `j2r`. These parameters can be overridden from the command line, i.e., it is possible to have multiple databases on multiple machines, with different users.
+**Important!** **json2run** must be able to access a MongoDB database called `j2r` with user `j2r` and password `j2r`. These parameters can be overridden from the command line, i.e., it is possible to have multiple databases on multiple machines, with different users.
 
 ## Usage
 
@@ -478,6 +489,32 @@ Counter post processors can be used to generate a unique id for every configurat
 	}
 	
 The counter will generate an incremental number starting from `init` for each configuration that is processed. Of course, by putting counter processors deep in the JSON tree, it is possible to generate counters for specific parameters or set of parameters. `init` is auxiliary, in case it is not specified, the counter will start from 0.
+
+### Compact syntax
+
+**json2run** also comes with a compact syntax (currently poorly documented), therefore the first example on this page is equivalent to the following experiment definition
+
+    {
+        "and": [
+            { "a": [ "foo", "bar", "baz" ] },
+            { "or": [
+                { "b1": { "min": 0.0, "max": 1.0, "step": 0.25 } },
+                { "b2": { "min": 2.0, "max": 10.0, "step": 2 } }
+            ] }
+        ]
+    }
+
+The main idea behind the compact syntax is that the key and the value defining a node also imply a given node type
+
+* `"and": [ ]`: `and` node,
+* `"or": [ ]`: `or` node,
+* `"hammersley": <samples> "in": <subtree>`: Hammersley post-processor,
+* `"<name>": [  ]`: discrete type
+* `"<name>": { "min": <min>, "max": <max>, "step": <step>  }`, discrete type (with step) 
+* `"<name>": { "min": <min>, "max": <max> }`: continuous type
+* `"<name>": "<path>"`: `directory` or `file` type (depending on path).
+
+Other types of nodes are built similarly. Post-processor parameters are usually just added to the object. This documentation will be improved, I swear.
 
 ### The `j2r` command line tool
 
