@@ -1,6 +1,6 @@
 # json2run
 
-**json2run** is a tool to automate the running, storage and analysis of experiments. It has been created in the first place to study different algorithms or different sets of values for algorithm parameters, but it is a general tool and can be used wherever it fits. The main advantage of **json2run** (over a home-brewed experiment suite) is that it allows to describe a set of experiments concisely as a [JSON](http://www.json.org)-formatted parameter tree, such as the following (note the presence of parameter definitions as well as logical operators to combine them)
+**json2run** is a tool to automate the parallel running, storage and analysis of experiments. It has been created in the first place to study different algorithms or different sets of values for algorithm parameters, but it is a general tool and can be used wherever it fits. The main advantage of **json2run** (over a home-brewed experiment suite) is that it allows to describe a set of experiments concisely as a [JSON](http://www.json.org)-formatted parameter tree, such as the following (note the presence of parameter definitions as well as logical operators to combine them)
 
 
 	{
