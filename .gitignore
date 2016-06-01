@@ -7,3 +7,4 @@ dist
 *.pyc
 *.swp
 json2run.egg-info
+.idea
