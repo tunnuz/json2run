@@ -5,7 +5,7 @@ library(ggplot2)
 library(scales)
 
 # mongodb connection
-if (!exists("db_connection")) 
+if (!exists("db_connection"))
 {
     writeLines("Warning: you're not connected to any database, run connect(<hostname>) to connect.")
 }
@@ -14,11 +14,11 @@ if (!exists("db_connection"))
 connect <- function(host, database="j2r", user="j2r", pass="j2r")
 {
     assign("db_connection", mongoDbConnect(database, host), envir = .GlobalEnv)
-    # dbAuthenticate(mongo,"user","pass")     
+    # dbAuthenticate(mongo,"user","pass")
 }
 
 # "not-in" operator
-`%ni%` = Negate(`%in%`) 
+`%ni%` = Negate(`%in%`)
 Infinity <- Inf
 
 # steal interleave from ggplot
@@ -30,16 +30,16 @@ getExperiments <- function(batch, fromScratch = TRUE, instance_param = c("main_i
     cacheFile = sprintf("%s.dat", batch)
     batch <- dbGetQueryForKeys(db_connection, "batches", sprintf('{ "name": "%s" }', batch), '{ "type": 1, "configurations": 1, "instance_parameter": 1 }')
     batch_id = batch$X_id
-    
+
     if (is.na(batch$instance_parameter))
         batch$instance_parameter <- instance_param
-    
+
     # instance parameters are known for races
     if (batch$type == "race")
         instance_param = c(batch$instance_parameter, "repetition")
-        
+
     instance_param <- c(normalize_name(instance_param), "repetition")
-    
+
     if (is.null(batch_id))
     {
         writeLines("Batch not found!")
@@ -59,9 +59,9 @@ getExperiments <- function(batch, fromScratch = TRUE, instance_param = c("main_i
         writeLines(sprintf("Loading cache file %s", cacheFile))
         load(cacheFile)
         return (experiments)
-        
+
     }
-    
+
     # if cache file doesn't exists or you wish to retrieve experiments from scratch
     else
     {
@@ -70,7 +70,7 @@ getExperiments <- function(batch, fromScratch = TRUE, instance_param = c("main_i
         # this is to avoid memory exceptions in RMongo, get chunks of 100000 results
         alreadyRetrieved <- 0
         writeLines("Retrieving chunks")
-        repeat 
+        repeat
         {
 
             # get chunk and attach it to experiments
@@ -79,33 +79,33 @@ getExperiments <- function(batch, fromScratch = TRUE, instance_param = c("main_i
                 "experiments",  # collection
                 sprintf('{ "batch": { "$oid": "%s" } }', batch_id),
                 # selected fields
-                "{ 
+                "{
                     parameters: 1,
                     stats: 1
                 }",
-                limit = 10000,
+                limit = 100,
                 skip = alreadyRetrieved
             )
-            
+
             chunkSize <- nrow(chunk)
-            alreadyRetrieved <- alreadyRetrieved + chunkSize 
+            alreadyRetrieved <- alreadyRetrieved + chunkSize
             writeLines(sprintf("Got %d records so far", alreadyRetrieved))
-            experiments <- rbind.fill(experiments, chunk) 
-            
+            experiments <- rbind.fill(experiments, chunk)
+
             # stop if last chunk has been retrieved
-            if (chunkSize < 10000)
+            if (chunkSize < 100)
                 break
         }
 
         # remove _ids
-        experiments$X_id <- NULL 
-        
+        experiments$X_id <- NULL
+
         old_names <- names(experiments)
         experiments <- expand_JSON(experiments, "parameters")
         new_names <- names(experiments)
 
         parameters <- setdiff(new_names, old_names)
-        
+
         instance_param <- intersect(instance_param, parameters)
         for (p in instance_param)
              experiments[,p] <- as.factor(sub(".*/", "", experiments[,p]))
@@ -114,13 +114,13 @@ getExperiments <- function(batch, fromScratch = TRUE, instance_param = c("main_i
         experiments <- expand_JSON(experiments, "stats")
 
         str(experiments)
-        
+
         # generating configurations
         writeLines("Generating configurations ...")
 
         conf_params <- parameters[which(parameters %ni% instance_param)]
         experiments <- add_conf(experiments, conf_params)
-        
+
         # pruned / winning
         if (batch$type == "race")
         {
@@ -132,11 +132,11 @@ getExperiments <- function(batch, fromScratch = TRUE, instance_param = c("main_i
             experiments <- merge(experiments, confs)
             experiments$pruned <- is.na(experiments$sum_of_ranks)
         }
-        
+
         str(experiments)
-        
+
         save(experiments, file=cacheFile)
-        
+
         return (experiments)
     }
 }
@@ -154,12 +154,12 @@ get_relevant_params <- function(x, params)
 }
 
 # expand content of columns (e.g. stats or parameters)
-expand_JSON <- function(x, column) 
+expand_JSON <- function(x, column)
 {
     writeLines(sprintf("Expanding JSON %s ...", column))
-   
-    full <- lapply(x[,column], function(x) 
-    { 
+
+    full <- lapply(x[,column], function(x)
+    {
         y <- fromJSON(x, simplify=FALSE)
         return(y[unlist(lapply(y,function(x) { return(!is.list(x))}))])
     })
@@ -185,7 +185,7 @@ add_conf <- function(x, params, relevant_params = c())
 
     # short_relevant_params <- unlist(lapply(relevant_params, shorthand_name))
     x$configuration <- as.factor(do.call(paste, interleave(relevant_params, x[relevant_params])))
-        
+
     return(x)
 }
 
@@ -194,12 +194,12 @@ extract_confs <- function(batch)
 {
     winning <- data.frame()
 
-    # gather winning 
+    # gather winning
     if (batch$type == "race")
     {
         racing = fromJSON(batch$configurations)
         for (i in 1:length(racing))
-        {   
+        {
             if (is.null(racing[[i]]$sum_of_ranks))
                 racing[[i]]$sum_of_ranks <- NA
             row <- as.data.frame(racing[i])
@@ -229,7 +229,7 @@ shorthand_name <- function(s, l = 1)
 }
 
 # configuration generation (probably not used)
-linteraction <- function (factors, sep = ", ", lex.order = FALSE) 
+linteraction <- function (factors, sep = ", ", lex.order = FALSE)
 {
     args = list()
     if (is.data.frame(factor))
@@ -256,20 +256,20 @@ linteraction <- function (factors, sep = ", ", lex.order = FALSE)
             if (lex.order) {
                 ll <- length(lvs)
                 ans <- ans + ll * if1
-                lvs <- paste(rep(l, each = ll), rep(lvs, length(l)), 
+                lvs <- paste(rep(l, each = ll), rep(lvs, length(l)),
                   sep = sep)
             }
             else {
                 ans <- ans * length(l) + if1
-                lvs <- paste(rep(l, length(lvs)), rep(lvs, each = length(l)), 
+                lvs <- paste(rep(l, length(lvs)), rep(lvs, each = length(l)),
                   sep = sep)
             }
             if (anyDuplicated(lvs)) {
                 ulvs <- unique(lvs)
-                while ((i <- anyDuplicated(flv <- match(lvs, 
+                while ((i <- anyDuplicated(flv <- match(lvs,
                   ulvs)))) {
                   lvs <- lvs[-i]
-                  ans[ans + 1L == i] <- match(flv[i], flv[1:(i - 
+                  ans[ans + 1L == i] <- match(flv[i], flv[1:(i -
                     1)]) - 1L
                   ans[ans + 1L > i] <- ans[ans + 1L > i] - 1L
                 }
@@ -285,31 +285,31 @@ friedman_posthoc <- function(x, alpha = 0.05, measure = "cost", optimization = "
 
     # measure number of samples
     samples = min(ddply(x, .(configuration), .fun = function(x) { return(nrow(x)) })$V1)
-		
+
     # configurations
     confs <- unique(x$configuration)
-    opt_factor = 1 
+    opt_factor = 1
     if (optimization == "max")
         opt_factor = -1
- 
+
     # rotate experiments to match F-Race's setup
-    y <- ddply(x, .(configuration), .fun = function(x, samples) { return(rep(t(x[,"cost"] * opt_factor), samples)[1:samples])}, samples)    
-    
+    y <- ddply(x, .(configuration), .fun = function(x, samples) { return(rep(t(x[,"cost"] * opt_factor), samples)[1:samples])}, samples)
+
     y <- t(y[,2:ncol(y)])
     n <- nrow(y)
     I <- 1:ncol(y)
-  
+
     # configurations on the columns
     k <- length(I)
     r <- t(apply(y[1:n, I], 1, rank))
-    
+
     # code from F-Race starts here
     A <- sum(as.vector(r)^2)
     R <- apply(r, 2, sum)
     J <- I[order(R)]
-    
+
     TIES <- tapply(r, row(r), table)
-    STATISTIC <- ((12 * sum((R - n * (k + 1)/2)^2))/(n * k * 
+    STATISTIC <- ((12 * sum((R - n * (k + 1)/2)^2))/(n * k *
         (k + 1) - (sum(unlist(lapply(TIES, function(u) {
         u^3 - u
     })))/(k - 1))))
@@ -317,16 +317,16 @@ friedman_posthoc <- function(x, alpha = 0.05, measure = "cost", optimization = "
     PVAL <- pchisq(STATISTIC, PARAMETER, lower = FALSE)
 
     o <- order(R)
-    
+
     if (!is.nan(PVAL) && (PVAL < alpha)) {
-        
+
         t <- qt(1 - alpha/2, (n - 1) * (k - 1)) * (2 * (n * A - sum(R^2))/((n - 1) * (k - 1)))^(1/2)
         J <- I[o[1]]
-        for (j in 2:k) if (abs(R[o[j]] - R[o[1]]) > t) 
+        for (j in 2:k) if (abs(R[o[j]] - R[o[1]]) > t)
             break
         else J <- c(J, I[o[j]])
     }
- 
+
     # return winning configurations and sum of ranks
     return(data.frame(configuration = confs[J], sum_of_ranks = R[J]))
 }
@@ -339,25 +339,25 @@ friedman_posthoc_by_class <- function(x, class, one_winner = FALSE)
     x <- ddply(x, .(class), .fun = function(x, one_winner)
     {
         print(sprintf("Processing %s", x[1,"class"]))
-        
+
         # do first race
-        z <- friedman_posthoc(x) 
+        z <- friedman_posthoc(x)
         if (one_winner)
             z <- z[z$sum_of_ranks == max(z$sum_of_ranks),]
         print(z)
-        x[x$configuration %in% z$configuration,]$pruned <- FALSE 
-        
+        x[x$configuration %in% z$configuration,]$pruned <- FALSE
+
         # check if we can race more on winners
         last = nrow(z)
         while (TRUE && last > 1)
         {
-            z <- friedman_posthoc(x[x$pruned == FALSE,]) 
+            z <- friedman_posthoc(x[x$pruned == FALSE,])
             if (one_winner)
                 z <- z[z$sum_of_ranks == max(z$sum_of_ranks),]
             print(z)
             x$pruned <- TRUE
-            x[x$configuration %in% z$configuration,]$pruned <- FALSE 
-        
+            x[x$configuration %in% z$configuration,]$pruned <- FALSE
+
             if (nrow(z) == last)
                 break
             last = nrow(z)
@@ -372,22 +372,22 @@ regression_tree <- function(x, model) {
 
     # build regression tree to find good parameters wrt. performance
     fit <- rpart(model, method="anova")
-	
+
     # summary(fit)
     printcp(fit)
-    if (sum(fit$splits)> 0) 
+    if (sum(fit$splits)> 0)
     {
     	# print textual version
     	print(fit)
-    
+
         # plot tree
     	plot(fit, main = sprintf("regression tree"))
     	text(fit)
-		
+
     	# save tree as postscript
     	post(fit, filename="regression_tree.ps")
     }
-	
+
     # perform anova to detect relevant parameters
     print(anova(model))
     return(fit)
