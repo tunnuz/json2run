@@ -555,7 +555,7 @@ def prepare_args(parser):
     parser.add_argument("--limit", "-l", required = False, type = int, default=0, help="how many batches to show in the list")
     parser.add_argument("--slurm", "-sl", required = False, type = bool, default=False, help="run on a slurm cluster")
     parser.add_argument("--slurm-priority", "-slp", required = False, type = int, default=500, help="adjust slurm priority, increasing this lowers priority. Must be in [0, 10000]")
-    parser.add_argument("--slurm-time", "-slt", required = False, type = str, default="05:00:00", help="time limit for each task in HH:MM:SS")
+    parser.add_argument("--slurm-time", "-slt", required = False, type = str, default="02:00:00", help="time limit for each task in HH:MM:SS, note that priority is reduced for long tasks")
     parser.add_argument("--slurm-cpus", "-slc", required = False, type = int, default=1, help="cpus per task")
     parser.add_argument("--slurm-partition", "-slq", required = False, type = str, default="", help="the slurm partition(s) to submit to, can specify multiple comma separated partitions")
     parser.add_argument("--slurm-mem", "-slm", required = False, type = int, default=0, help="memory requested per task in MB (defaults to cluster default)")
