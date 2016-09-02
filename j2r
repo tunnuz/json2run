@@ -39,7 +39,7 @@ def main():
     Persistent.connect(host=args.db_host, port=args.db_port, user=args.db_user, passw=args.db_pass, database=args.db_database)
 
     # Get srun arguments
-    slurm_cmd = ("srun --jobname=j2r-task --nice=%i --quit-on-interrupt --time=%s --cpus-per-task=%i"
+    slurm_cmd = ("srun --job-name=j2rtask --nice=%i --quit-on-interrupt --time=%s --cpus-per-task=%i"
                     % (args.slurm_priority, args.slurm_time, args.slurm_cpus))
     if args.slurm_partition != "":
         # If we have set a partition, add it to the cmd
