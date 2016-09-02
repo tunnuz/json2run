@@ -87,7 +87,7 @@ class Batch(Persistent):
 
         self.generator = ParameterExpression.from_string(self["generator"])
 
-    def run(self, thread_n = cpu_count(), greedy = False):
+    def run(self, slurm = {"use": False}, thread_n = cpu_count(), greedy = False):
         """Runs a whole batch of experiment, possibly skipping experiment which have been already run on this or other batches."""
 
         self.experiment_q = ExperimentQueue(thread_n)
@@ -99,6 +99,7 @@ class Batch(Persistent):
         # save current state
         log.info("Running batch with %d parallel threads and %s." % (thread_n, ("greedy" if greedy else "non greedy")))
         self["threads"] = thread_n
+        self["slurm"] = slurm
         self.save()
 
         # spawn thread_n-sized thread pool so that we start running straight away
@@ -330,7 +331,7 @@ class Race(Batch):
         self.update_generator(pex)
         self.initialize_experiments()
 
-    def run(self, thread_n = cpu_count(), greedy = False, alpha = 0.05):
+    def run(self, slurm = {"use": False}, thread_n = cpu_count(), greedy = False, alpha = 0.05):
         """Runs a race of configurations, by constantly pruning inferior configurations."""
 
         log.info("Initializing experiments (this might take a while)")
@@ -366,7 +367,7 @@ class Race(Batch):
         self["iterations_completed"] = self.iterations_completed
         self["threads"] = thread_n
         self["configurations"] = json.dumps(self.configurations_dict)
-
+        self["slurm"] = slurm
         self.save()
 
         # spawn thread_n-sized thread pool
