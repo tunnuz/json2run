@@ -7,93 +7,107 @@ import random
 from datetime import datetime
 import logging as log
 
+
 class ExperimentRunner(Thread):
     """Experiment consumer, handles experiment launching and interruption."""
-    
+
     def __init__(self, batch):
         """Saves reference to batch, for interrupt detection."""
-        
+
         super(ExperimentRunner, self).__init__()
-        self.batch = batch        
-                
+        self.batch = batch
+        self.out = None
+        self.err = None
+
     def run(self):
-        """Consume experiments until the queue has more to process."""            
-        
+        """Consume experiments until the queue has more to process."""
+
         # until the queue is empty
         while True:
-            
+
             # get experiment from queue
             self.current = self.batch.experiment_q.get()
             self.batch.experiment_started(self.current)
-            
+
             # be nice with enqueuing thread
             sleep(0.1)
-            
+
             # get prefix and separator information from batch (if possible)
             prefix = self.batch["prefix"] if "prefix" in self.batch else None
             separator = self.batch["separator"] if "separator" in self.batch else None
 
             # generate command line
             parameters = ParameterExpression.format(None, self.current.parameters, separator, prefix)
-                    
+
             # check if batch has been interrupted in the meanwhile
             if self.current.interrupted:
-            
+
                 # remove experiment from queue without executing it
                 self.batch.experiment_finished(self.current)
                 self.batch.experiment_q.task_done()
-                
+
             else:
-                                
+
                 # run experiment, record time, save output
                 self.current["date_started"] = datetime.utcnow()
-            
-                # print 
+
+                # print
                 if self.current.total and not self.current.interrupted:
                     log.info("Running (%d/%d) %s %s" % (self.current.incremental, self.current.total, self.current.executable, parameters))
                 else:
                     log.info("Running %s %s" % (self.current.executable, parameters))
-            
-            
+
+
                 # open subprocess and wait for it to finish
                 try:
-                    
-                    self.current.process = Persistent.run("%s %s" % (self.current.executable, parameters))
-                    self.current.status = self.current.process.wait()
-                
+                    # Are we using slurm?
+                    if self.batch["slurm"]["use"]:
+                        # Prepend cmd with slurm_cmd
+                        cmd = "%s %s %s" % (self.batch["slurm"]["cmd"], self.current.executable, parameters)
+                    else:
+                        cmd = "%s %s" % (self.current.executable, parameters)
+
+                    # Run the command
+                    self.current.process = Persistent.run(cmd)
+                    # self.current.status = self.current.process.wait()
+                    (self.out, self.err) = self.current.process.communicate()
+                    self.current.status = self.current.process.returncode
+
                 except Exception as e:
-                    
+
                     if not self.current.interrupted:
                         print "Failed running experiment: ", e
-                                    
+
                 self.current["date_stopped"] = datetime.utcnow()
-            
+
                 # process output, save experiment (if valid)
                 self.terminate()
-                
+
                 # cleanup process information
                 self.current.clean()
-            
+
                 # notify batch that experiment is over
                 self.batch.experiment_finished(self.current)
 
                 # task is done
                 self.batch.experiment_q.task_done()
-   
+
     def terminate(self):
         """Get experiment result, save it, or kill experiment."""
         try:
-             
+
             # read from stdout
-            output = "".join(self.current.process.stdout)
-            errs = "".join(self.current.process.stderr)
+            output = "".join(self.out)
+            errs = "".join(self.err)
+            self.out = None
+            self.err = None
 
             # parse the JSON output, save results
             if self.current.status != 0:
                 log.error("Output: **%s**, status: %s, errs: %s" % (output, self.current.status, errs))
                 self.current.interrupted = True
-            
-            # if interrupted or wrong 
+
+            # if interrupted or wrong
             if self.current.interrupted:
                 return
 
@@ -107,21 +121,21 @@ class ExperimentRunner(Thread):
 
             # consider the rest of information as stats
             self.current["stats"].update(json_output)
-            self.current.save()  
-            
+            self.current.save()
+
         except Exception as e:
-            
+
             print "Failed reading experiment results: ", e
-                        
+
             # output wasn't valid JSON, ignore result (don't save it)
             self.current.interrupted = True
-            
+
 class Experiment(Persistent):
     """A single experiment."""
-    
+
     def __init__(self, batch, executable, params, iteration = None):
         """Initializes an experiment."""
-        
+
         super(Experiment, self).__init__()
 
         self.process = None
@@ -139,11 +153,11 @@ class Experiment(Persistent):
         self["copy"] = False
         self["stats"] = {}
         self["solutions"] = []
-            
+
     def load(self, obj):
         """Load database object and reconstitutes experiment."""
         super(Experiment, self).__init__(obj)
-    
+
     def kill(self):
         """Kill experiment."""
         self.lock()
@@ -155,28 +169,28 @@ class Experiment(Persistent):
             except:
                 self.process = None
         self.unlock()
-                        
+
     def clean(self):
         """Cleanup process execution."""
         #if self.process:
         #self.process.stdout.close()
         #self.process.stderr.close()
         self.process = None
-            
+
     def set_incremental(self, incremental, total):
         """Incremental and total indices (for logging)."""
-        
+
         self.incremental = incremental
         self.total = total
- 
+
     def on_db(self):
         """Checks whether this experiment is already on the db, if greedy = false
         only checks if the experiment is in the current batch."""
-        
+
         query = {}
         for p in self["parameters"]:
             query["parameters.%s" % p] = self["parameters"][p]
-        del(query["parameters.repetition"]) 
+        del(query["parameters.repetition"])
         query["copy"] = False # we're not interested in copies
 
         return Experiment.exists(query)
@@ -184,7 +198,7 @@ class Experiment(Persistent):
     def on_batch(self):
         """Checks whether this experiment is already on the db, if greedy = false
         only checks if the experiment is in the current batch."""
-        
+
         query = {}
         query["parameters"] = self["parameters"]
         query["batch"] = self["batch"]
@@ -192,24 +206,24 @@ class Experiment(Persistent):
 
     def get_similar(self):
         """Get list of similar (i.e. with same parameters and executable) experiments out of this batch."""
-        
+
         query = {}
         for p in self["parameters"]:
             query["parameters.%s" % p] = self["parameters"][p]
-        del(query["parameters.repetition"]) 
-        query["copy"] = False # we're not interested in copies   
-        query["executable"] = self["executable"] # same executable       
+        del(query["parameters.repetition"])
+        query["copy"] = False # we're not interested in copies
+        query["executable"] = self["executable"] # same executable
         query["batch"] = { "$nin": [ self["batch"] ] }
-        
+
         return Experiment.get(query)
 
     @classmethod
     def collection(cls):
         return "experiments"
-    
+
     def copy_to(self, batch, repetition):
         """Create copy of this experiment."""
-        
+
         new = Experiment(batch, self.executable, self.parameters)
         new["parameters"]["repetition"] = repetition
         new["stats"] = self["stats"]
@@ -217,5 +231,5 @@ class Experiment(Persistent):
         new["date_started"] = self["date_started"]
         new["date_stopped"] = self["date_stopped"]
         new["copy"] = True
-        
+
         return new
