@@ -10,7 +10,7 @@ from collections import namedtuple
 import logging as log
 from multiprocessing import cpu_count
 import datetime
-from math import floor
+from math import floor, ceil
 
 def main():
 
@@ -36,6 +36,21 @@ def main():
 
     # database setup
     Persistent.connect(host=args.db_host, port=args.db_port, user=args.db_user, passw=args.db_pass, database=args.db_database)
+
+    # Get srun arguments
+    slurm_cmd = ("srun --jobname=j2r-task --nice=%i --quit-on-interrupt --time=%s --cpus-per-task=%i"
+                    % (args.slurm_priority, args.slurm_time, args.slurm_cpus))
+    if args.slurm_partition != "":
+        # If we have set a partition, add it to the cmd
+        slurm_cmd += " --partition=%s" % (args.slurm_partition)
+    if args.slurm_mem > 0:
+        # If we have set memory, work out how much per cpu and add it to cmd
+        mem_per_cpu = int(ceil(args.slurm_mem / args.slurm_cpus))
+        slurm_cmd += " --mem-per-cpu=%i" % (mem_per_cpu)
+
+    # Dict with slurm settings
+    slurm = {"use": args.slurm,
+             "cmd": slurm_cmd}
 
     # action dispatching
     if args.action == "print-cll" or args.action == "print-csv":
@@ -87,7 +102,7 @@ def main():
             b = unfinished.pop()
             batch = Batch(False)
             batch.load(b)
-            batch.run(args.parallel_threads, args.greedy)
+            batch.run(args.slurm, args.parallel_threads, args.greedy)
 
         # initialize
         elif not samename:
@@ -102,7 +117,7 @@ def main():
 
             pex = from_file(args.input)
             batch = Batch(name = args.batch_name, generator = pex, executable = args.executable, repetitions = int(args.repetitions), prefix = args.prefix, separator = args.separator)
-            batch.run(args.parallel_threads, args.greedy)
+            batch.run(slurm, args.parallel_threads, args.greedy)
 
         else:
             log.error("A complete batch with the same name is already on the database, try another name.")
@@ -133,7 +148,7 @@ def main():
                 pex = from_file(args.input)
                 batch.set_generator(pex)
 
-            batch.run(args.parallel_threads, args.greedy, args.confidence)
+            batch.run(args.slurm, args.parallel_threads, args.greedy, args.confidence)
 
         # initialize
         elif not samename:
@@ -157,7 +172,7 @@ def main():
             pex = from_file(args.input)
 
             batch = Race(name = args.batch_name, generator = pex, executable = args.executable, repetitions = int(args.repetitions), initial_block = int(args.initial_block), performance_parameter = args.performance_param, instance_parameter = args.instance_param, seed = args.seed, prefix = args.prefix, separator = args.separator)
-            batch.run(args.parallel_threads, args.greedy, args.confidence)
+            batch.run(slurm, args.parallel_threads, args.greedy, args.confidence)
 
         else:
             log.error("A complete batch with the same name is already on the database, try another name.")
@@ -520,7 +535,7 @@ def prepare_args(parser):
     parser.add_argument("--initial-block", "-ib", required = False, type=int, default = 10, help="size of the initial block of experiments in a race")
     parser.add_argument("--confidence", required = False, type=float, default = 0.05, help="confidence for the hypotesis testing in a race")
     parser.add_argument("--batch-name", "-n", required = False, type = str, help = "name of the batch on the database")
-    parser.add_argument("--parallel-threads", "-p", required = False, type = int, default = cpu_count(), help="number of parallel threads onto which to run the experiments")
+    parser.add_argument("--parallel-threads", "-p", required = False, type = int, default = cpu_count(), help="number of parallel threads onto which to run the experiments, with slurm this is the max task concurrency")
     parser.add_argument("--greedy", "-g", required = False, type = bool, default = False, help="whether the experiment can be reused from every batch in the database (true) or just the current one (false)")
     parser.add_argument("--log-file", required = False, type = str, help="file where the whole log is written")
     parser.add_argument("--log-level", required = False, type = str, default="info", choices=["warning", "error", "info"] )
@@ -537,6 +552,13 @@ def prepare_args(parser):
     parser.add_argument("--separator", "-sep", required = False, type = str, default=ParameterExpression.def_separator, help="separator character(s) for arguments")
     parser.add_argument("--stats", "-st", required = False, type = str, nargs="+", help="list of stats to export in CSV")
     parser.add_argument("--limit", "-l", required = False, type = int, default=0, help="how many batches to show in the list")
+    parser.add_argument("--slurm", "-sl", required = False, type = bool, default=False, help="run on a slurm cluster")
+    parser.add_argument("--slurm-priority", "-slp", required = False, type = int, default=500, help="adjust slurm priority, increasing this lowers priority. Must be in [0, 10000]")
+    parser.add_argument("--slurm-time", "-slt", required = False, type = str, default="05:00:00", help="time limit for each task in HH:MM:SS")
+    parser.add_argument("--slurm-cpus", "-slc", required = False, type = int, default=1, help="cpus per task")
+    parser.add_argument("--slurm-partition", "-slq", required = False, type = str, default="", help="the slurm partition(s) to submit to, can specify multiple comma separated partitions")
+    parser.add_argument("--slurm-mem", "-slm", required = False, type = int, default=0, help="memory requested per task in MB (defaults to cluster default)")
+
 
 
     parser.add_help = True
