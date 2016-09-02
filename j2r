@@ -103,7 +103,7 @@ def main():
             b = unfinished.pop()
             batch = Batch(False)
             batch.load(b)
-            batch.run(args.slurm, args.parallel_threads, args.greedy)
+            batch.run(slurm, args.parallel_threads, args.greedy)
 
         # initialize
         elif not samename:
@@ -149,7 +149,7 @@ def main():
                 pex = from_file(args.input)
                 batch.set_generator(pex)
 
-            batch.run(args.slurm, args.parallel_threads, args.greedy, args.confidence)
+            batch.run(slurm, args.parallel_threads, args.greedy, args.confidence)
 
         # initialize
         elif not samename:
