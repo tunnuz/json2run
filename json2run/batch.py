@@ -99,7 +99,8 @@ class Batch(Persistent):
         # save current state
         log.info("Running batch with %d parallel threads and %s." % (thread_n, ("greedy" if greedy else "non greedy")))
         self["threads"] = thread_n
-        self["slurm"] = slurm
+        self["slurm_use"] = slurm["use"]
+        self["slurm_cmd"] = slurm["cmd"]
         self.save()
 
         # spawn thread_n-sized thread pool so that we start running straight away
@@ -367,7 +368,8 @@ class Race(Batch):
         self["iterations_completed"] = self.iterations_completed
         self["threads"] = thread_n
         self["configurations"] = json.dumps(self.configurations_dict)
-        self["slurm"] = slurm
+        self["slurm_use"] = slurm["use"]
+        self["slurm_cmd"] = slurm["cmd"]
         self.save()
 
         # spawn thread_n-sized thread pool
