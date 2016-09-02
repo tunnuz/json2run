@@ -52,9 +52,9 @@ class ExperimentRunner(Thread):
                 self.current["date_started"] = datetime.utcnow()
 
                 # Are we using slurm?
-                if self.batch["slurm"]["use"]:
+                if self.batch["slurm_use"]:
                     # Prepend cmd with slurm_cmd
-                    cmd = "%s %s %s" % (self.batch["slurm"]["cmd"], self.current.executable, parameters)
+                    cmd = "%s %s %s" % (self.batch["slurm_cmd"], self.current.executable, parameters)
                 else:
                     cmd = "%s %s" % (self.current.executable, parameters)
 
