@@ -8,3 +8,4 @@ dist
 *.swp
 json2run.egg-info
 .idea
+test.csv
