@@ -1,0 +1,20 @@
+{
+    "type": "and",
+    "descendants": [
+        {
+            "type": "discrete",
+            "name": "test-str1",
+            "values": [ "foo", "bar", "baz" ]
+        },
+        {
+            "type": "discrete",
+            "name": "test-str2",
+            "values": [ "oof", "rab", "zab" ]
+        },
+        {
+            "type": "discrete",
+            "name": "test-int",
+            "values": [ 1, 2, 3, 4 ]
+        }
+    ]
+}
