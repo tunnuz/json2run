@@ -15,6 +15,8 @@ class ExperimentRunner(Thread):
         
         super(ExperimentRunner, self).__init__()
         self.batch = batch        
+        self.out = None
+        self.err = None
                 
     def run(self):
         """Consume experiments until the queue has more to process."""            
@@ -59,7 +61,9 @@ class ExperimentRunner(Thread):
                 try:
                     
                     self.current.process = Persistent.run("%s %s" % (self.current.executable, parameters))
-                    self.current.status = self.current.process.wait()
+                    # self.current.status = self.current.process.wait()
+                    (self.out, self.err) = self.current.process.communicate()
+                    self.current.status = self.current.process.returncode
                 
                 except Exception as e:
                     
@@ -85,8 +89,10 @@ class ExperimentRunner(Thread):
         try:
              
             # read from stdout
-            output = "".join(self.current.process.stdout)
-            errs = "".join(self.current.process.stderr)
+            output = "".join(self.out)
+            errs = "".join(self.err)
+            self.out = None
+            self.err = None
 
             # parse the JSON output, save results
             if self.current.status != 0:
