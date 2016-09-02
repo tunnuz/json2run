@@ -51,22 +51,22 @@ class ExperimentRunner(Thread):
                 # run experiment, record time, save output
                 self.current["date_started"] = datetime.utcnow()
 
+                # Are we using slurm?
+                if self.batch["slurm"]["use"]:
+                    # Prepend cmd with slurm_cmd
+                    cmd = "%s %s %s" % (self.batch["slurm"]["cmd"], self.current.executable, parameters)
+                else:
+                    cmd = "%s %s" % (self.current.executable, parameters)
+
                 # print
                 if self.current.total and not self.current.interrupted:
-                    log.info("Running (%d/%d) %s %s" % (self.current.incremental, self.current.total, self.current.executable, parameters))
+                    log.info("Running (%d/%d) %s" % (self.current.incremental, self.current.total, cmd))
                 else:
-                    log.info("Running %s %s" % (self.current.executable, parameters))
+                    log.info("Running %s" % (self.current.executable, cmd))
 
 
                 # open subprocess and wait for it to finish
                 try:
-                    # Are we using slurm?
-                    if self.batch["slurm"]["use"]:
-                        # Prepend cmd with slurm_cmd
-                        cmd = "%s %s %s" % (self.batch["slurm"]["cmd"], self.current.executable, parameters)
-                    else:
-                        cmd = "%s %s" % (self.current.executable, parameters)
-
                     # Run the command
                     self.current.process = Persistent.run(cmd)
                     # self.current.status = self.current.process.wait()
