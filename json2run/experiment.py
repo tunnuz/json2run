@@ -62,7 +62,7 @@ class ExperimentRunner(Thread):
                 if self.current.total and not self.current.interrupted:
                     log.info("Running (%d/%d) %s" % (self.current.incremental, self.current.total, cmd))
                 else:
-                    log.info("Running %s" % (self.current.executable, cmd))
+                    log.info("Running %s" % (cmd))
 
 
                 # open subprocess and wait for it to finish
