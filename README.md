@@ -33,7 +33,7 @@ An experiment file such as the one above describes the parameters that must be g
 
 * printing the generated configurations as command line options,
 * running a batch of experiments based on the generated configurations,
-* storing the results of the experiments in a database, 
+* storing the results of the experiments in a database,
 * running a parameter race (see[^frace]) to find out the configurations (or configuration) that optimize a function of quality,
 * retrieving the results of the experiments from the database.
 
@@ -62,7 +62,7 @@ Finally, **json2run** comes with a very general but handy R script, which allows
 * PyMongo
 * NumPy
 * SciPy
-* R with `plyr` and `ggplot2` libraries (for analysis) 
+* R with `plyr` and `ggplot2` libraries (for analysis)
 
 ### Setup
 
@@ -79,7 +79,7 @@ or, if you plan to update **json2run** often (i.e. if you plan to customize it, 
 this will allow you to update to the latest version by just running
 
     hg pull -u
-    
+
 in the root directory.
 
 **Important!** **json2run** must be able to access a MongoDB database called `j2r` with user `j2r` and password `j2r`. These parameters can be overridden from the command line, i.e., it is possible to have multiple databases on multiple machines, with different users.
@@ -89,16 +89,16 @@ in the root directory.
 Since **json2run** is designed to be very flexible (its only requirements being that you expose all the parameters of your executable and that you have access to a MongoDB instance), this also means that it comes with a lot of options. We will go through them in the following sections, but if you just need a quick reference type
 
 	j2r --help
-	
+
 Before running anything, however, you will need to know how to write an experiment file.
-	
+
 ### Designing experiment files
 
-As previously mentioned, **json2run** expects a description of the experiments in JSON format. JSON (which, by the way, stands for JavaScript Object Notation) is a concise and human-readable language for describing structured data. It is also the very language MongoDB uses to store its data and to make queries, which makes for a natural integration. 
+As previously mentioned, **json2run** expects a description of the experiments in JSON format. JSON (which, by the way, stands for JavaScript Object Notation) is a concise and human-readable language for describing structured data. It is also the very language MongoDB uses to store its data and to make queries, which makes for a natural integration.
 
 #### Basic JSON syntax
 
-The basic components of a JSON documents are arrays, objects and scalars. You can use array and object to group more arrays and objects, or scalars. 
+The basic components of a JSON documents are arrays, objects and scalars. You can use array and object to group more arrays and objects, or scalars.
 
 ##### Scalars
 
@@ -115,7 +115,7 @@ Numbers can be integers or floats, and scientific notation is also supported.
 Arrays are lists of scalars separated by commas, e.g.:
 
 	[1, 2, 3, "foo", 3.14, true]
-	
+
 Objects can be seen as named arrays (similar to C++'s map<string,*>, or dictionaries if you're into Python):
 
 	{  
@@ -125,15 +125,15 @@ Objects can be seen as named arrays (similar to C++'s map<string,*>, or dictiona
 		"age": 150
 	}
 
-Note that arrays and objects use a different kind of parenthesis, `{}` vs `[]`. 
+Note that arrays and objects use a different kind of parenthesis, `{}` vs `[]`.
 
 ##### Comments
 
 JSON doesn't support comments, and most of the time you won't need them (the JSON contents should be sufficiently explanatory), but if you really need annotations, you can add fake entries to your objects, that won't be parsed by **json2run** and will serve as comments, such as `comment` in the following example:
 
-	{ 
-		"type": "discrete", 
-		"name": "initial_temperature", 
+	{
+		"type": "discrete",
+		"name": "initial_temperature",
 		"values": { "min": 10, "max": 30, "step": 10 }
 		"comment": "The initial temperature for Simulated Annealing."
 	}
@@ -160,9 +160,9 @@ For instance, suppose that we have a Simulated Annealing[^sa] solver that accept
 	{
 		"type": "and",
 		"descendants": [
-			{ 
-				"type": "discrete", 
-				"name": "initial_temperature", 
+			{
+				"type": "discrete",
+				"name": "initial_temperature",
 				"values": { "min": 10, "max": 30, "step": 10 }
 			},
 			{
@@ -194,14 +194,14 @@ Sometimes you have algorithms that accept different parameters and, possibly, a 
 			{
 				"type": "and",
 				"descendants": [
-					{ 
-						"type": "discrete", 
-						"name": "algorithm", 
+					{
+						"type": "discrete",
+						"name": "algorithm",
 						"values": [ "sa" ]
 					},
-					{ 
-						"type": "discrete", 
-						"name": "initial_temperature", 
+					{
+						"type": "discrete",
+						"name": "initial_temperature",
 						"values": { "min": 10, "max": 20, "step": 10 }
 					},
 					{
@@ -214,14 +214,14 @@ Sometimes you have algorithms that accept different parameters and, possibly, a 
 			{
 				"type": "and",
 				"descendants": [
-					{ 
-						"type": "discrete", 
-						"name": "algorithm", 
+					{
+						"type": "discrete",
+						"name": "algorithm",
 						"values": [ "ts" ]
 					},
-					{ 
-						"type": "discrete", 
-						"name": "tabu_list_length", 
+					{
+						"type": "discrete",
+						"name": "tabu_list_length",
 						"values": [ 10, 15, 20 ]
 					}
 				]
@@ -268,11 +268,11 @@ and an *implicit* one, which allows to define discrete numeric values from a `mi
 		"values": { "min": 0.0, "max": 10.0, "step": 0.034 }
 	}
 
-During the processing of the tree, implicit value definitions are transformed into explicit ones, and treated as such. A `discrete` node generates all the possible parameter values in order. 
+During the processing of the tree, implicit value definitions are transformed into explicit ones, and treated as such. A `discrete` node generates all the possible parameter values in order.
 
 ##### `continuous` nodes
 
-Continuous nodes allow to define parameter values that are generated by sampling continuous parameter spaces. These spaces are defined in terms of a `min` and a `max`, e.g.: 
+Continuous nodes allow to define parameter values that are generated by sampling continuous parameter spaces. These spaces are defined in terms of a `min` and a `max`, e.g.:
 
 	{
 		"type": "continuous",
@@ -280,7 +280,7 @@ Continuous nodes allow to define parameter values that are generated by sampling
 		"values": { "min": 0.0, "max": 10.0 }
 	}
 
-However, continuous nodes can't generate parameter values by themselves. Instead, they need to be processed later on by a *post-processor* attached to a node upper in the tree hierarchy. This might seem over complicated, but there's a use case behind it. 
+However, continuous nodes can't generate parameter values by themselves. Instead, they need to be processed later on by a *post-processor* attached to a node upper in the tree hierarchy. This might seem over complicated, but there's a use case behind it.
 
 In particular suppose that you want to study the interaction of two parameters on the performance of an algorithm. To do a proper sampling, the generated parameters must be picked from a 2-dimensional space, in a way that is as uniform a possible. One way to do this, would be to generate an `and` node containing several `discrete` nodes with different ranges. There are two problems with this approach (which is called *full-factorial*):
 
@@ -299,7 +299,7 @@ File (or directory) nodes are essentially `discrete` nodes, whose values are nor
 	    "path": "selected_instances.txt",
 	    "match": ".*"
 	}
-	
+
 where the `path` field specifies the location of the file to be used as input, and the `match` field restrict the generated parameters to the lines of the file matching a given regular expression[^re]. This is useful when you want to restrict to certain instances, but most frequently will just be ".*" (catch-all). As for directory nodes, they follow a similar semantic, the difference being that the generated values is the list of the content of the directory, filtered by the regular expression in the `match` field.
 
 	{
@@ -316,8 +316,8 @@ Flag nodes have a single parameter (the `name` of the generated flag) and genera
 	{
 		"type": "flag",
 		"name": "verbose"
-	} 
-	
+	}
+
 will just add the `--verbose` flag on the generated command lines.
 
 #### Post-processors
@@ -346,7 +346,7 @@ In many cases they just apply the same function over all the elements of the lis
 
 ##### `expression` processors
 
-Expression post processors are by far the most flexible ones. They allow to define a new parameter (either `discrete` or `continuous`, but **not** a flag) by evaluating a python expression and using the result as the value of the parameter. The processor is defined by a `match` regular expression, which captures the operands needed by the expression, and either 
+Expression post processors are by far the most flexible ones. They allow to define a new parameter (either `discrete` or `continuous`, but **not** a flag) by evaluating a python expression and using the result as the value of the parameter. The processor is defined by a `match` regular expression, which captures the operands needed by the expression, and either
 
 1. an `expression` which will be evaluated to yield the value of the generated `discrete` parameter, or
 2. two expressions (`min` and `max`) that will yield the values for the minimum and maximum of the generated `continuous` parameter.
@@ -359,7 +359,7 @@ The type of the parameter is inferred by the presence of the `expression` field,
 		"result": "<parameter_name>",
 		"expression": "<expression>"
 	}
-	
+
 	{
 		"type": "expression",
 		"match": "<operand_1>|<operand_2>|...",
@@ -370,7 +370,7 @@ The type of the parameter is inferred by the presence of the `expression` field,
 
 ###### Expression syntax
 
-Any valid python expression that has a return value can be used as `expression`, `min` or `max`. To access the values of the captured operands it is sufficient to postfix their name with `.value`. 
+Any valid python expression that has a return value can be used as `expression`, `min` or `max`. To access the values of the captured operands it is sufficient to postfix their name with `.value`.
 
 As for the available operations, functions from python's `math` and `json` modules are automatically imported. For instance, to generate a new parameter *p3* which is the power of two existing ones, *p1* and *p2*, we'll write:
 
@@ -380,7 +380,7 @@ As for the available operations, functions from python's `math` and `json` modul
 		"result": "p3",
 		"expression": "pow(p1.value, p2.value)"
 	}
-	
+
 While to generate a parameter which takes values in *[0.1\*p1, 5\*p2]*, we'll do:
 
 	{
@@ -440,8 +440,8 @@ When sampling continuous parameters or using `expression` post-processors, the r
 		"match": "<regex>"
 		"decimal_digits": <n>
 	}
-	
-Where `n` is the number of decimal digits we want to retain (**note** the numbers are rounded, not truncated, to `n` digits after the floating point), and `match` is a regular expression describing the parameters we want to round down. 
+
+Where `n` is the number of decimal digits we want to retain (**note** the numbers are rounded, not truncated, to `n` digits after the floating point), and `match` is a regular expression describing the parameters we want to round down.
 
 ###### Compact syntax
 
@@ -456,7 +456,7 @@ Rounding post-processors also support a compact syntax, to group roundings in a 
 		]
 	}
 
-Where `regex_k` are regular expressions describing one (or more) parameter, and `n_k` are the corresponding decimal digits we want to retain. 
+Where `regex_k` are regular expressions describing one (or more) parameter, and `n_k` are the corresponding decimal digits we want to retain.
 
 ###### Forcing precision
 
@@ -474,7 +474,7 @@ Rename post-processors can be used to rename parameters. The syntax, somewhat si
 			…
 		}
 	}
-	
+
 Where `old_k` are the original name of the parameters we want to rename and `new_k` are the new ones. Note that unlike `rounding`'s compact syntax, here `rename` is an object, not an array. Also, `old_k` are plain strings, not regular expressions.
 
 
@@ -487,7 +487,7 @@ Counter post processors can be used to generate a unique id for every configurat
 		"name": "<counter_name>",
 		"init": 5
 	}
-	
+
 The counter will generate an incremental number starting from `init` for each configuration that is processed. Of course, by putting counter processors deep in the JSON tree, it is possible to generate counters for specific parameters or set of parameters. `init` is auxiliary, in case it is not specified, the counter will start from 0.
 
 ### Compact syntax
@@ -510,7 +510,7 @@ The main idea behind the compact syntax is that the key and the value defining a
 * `"or": [ ]`: `or` node,
 * `"hammersley": <samples> "in": <subtree>`: Hammersley post-processor,
 * `"<name>": [  ]`: discrete type
-* `"<name>": { "min": <min>, "max": <max>, "step": <step>  }`, discrete type (with step) 
+* `"<name>": { "min": <min>, "max": <max>, "step": <step>  }`, discrete type (with step)
 * `"<name>": { "min": <min>, "max": <max> }`: continuous type
 * `"<name>": "<path>"`: `directory` or `file` type (depending on path).
 
@@ -588,7 +588,7 @@ When we're running batches or databases, we're implicitly assuming that we have 
 By default `j2r` prints on the standard output most of its logging information. However this information can be redirected on a file if needed, and the log level can be set.
 
 * `--log-file` specifies the file where the log is written (default: None)
-* `--log-level` can be `warning`, `error`, `info
+* `--log-level` can be `warning`, `error`, `info`
 
 #### Source code versioning
 
@@ -597,6 +597,17 @@ Additionally, **json2run** can record the code revision used for running a batch
 #### Instances and configurations
 
 Instances and parameter configurations are described in the same experiments file.
+
+#### SLURM
+There are some additional parameters we can use to run batches or races on a SLRUM cluster.
+
+* `--slurm` (or `-sl`) must be set to `true` to use SLURM
+* `--slurm-priority` (or `-slp`) adjusts the priority of your tasks
+* `--slurm-time` (or `-slt`) sets a time limit on each task, SLURM will kill the task if this is exceeded
+* `--slurm-cpus` (or `-slc`) sets the number of cpus to be allocated to each task
+* `--slurm-partition` (or `-slq`) specifies a partition, or comma separated list of partitions, for your tasks to run on
+* `--slurm-mem` (or '-slm') specifies the memory to be requested for each task
+
 
 ### Running examples
 
@@ -613,13 +624,13 @@ Run a batch of experiments based on an experiment file (*experiments.json*) and 
 Based on the same file, and reckoning that the instance parameter is called *instance*, we can run a race to find out the best configuration. Suppose that the solver outputs some statistics in JSON (as in the example above) and that we want to compare the configurations based on the *cost* of the obtained solutions.
 
 	$ j2r -a run-race -r 10 -n my_race -i experiments.json -ip instance -pp cost -e ./solver
-	
+
 #### Resuming a batch or a race
 
 To resume a previously stopped batch or race, it is sufficient to run
 
 	$ j2r -a run-batch -n my_batch
-	
+
 or
 
 	$ j2r -a run-race -n my_race
@@ -629,7 +640,7 @@ or
 Use the `batch-info` action, passing the name of the race or batch.
 
 	$ j2r -a batch-info -n my_race
-	
+
 the output is in JSON format (for easy parsing by other tools).
 
 #### Print the list of winning (so far) configurations in a race
@@ -643,7 +654,7 @@ Use the `show-winning` action, passing the name of the race or batch.
 Use the `delete-batch` action, passing the name of the race or batch.
 
 	$ j2r -a delete-batch -n my_race
-	
+
 #### List all the batches on the database
 
 Use the `list-batches` action.
@@ -656,8 +667,8 @@ The outcome of a batch or race, i.e. all the data about the experiments, can be 
 
 	source("analysis.R")
 	connect("host") # additionally provide user, pass, database, port
-	
-	x <- getExperiments("my_race", c("instance"))	
+
+	x <- getExperiments("my_race", c("instance"))
 The `x` data frame will contain a row for each experiment in the batch or race, with information about whether the configuration was one of the winning ones (in case of a race).
 
 ### References
