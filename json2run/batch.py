@@ -416,14 +416,16 @@ class Race(Batch):
 
                     # print current instance
                     log.info("Iteration: %s" % current_inst)
+                    
+                    # recompute missing (with new race information, sorted by sum of ranks)
+                    missing = filter(lambda x: x not in enqueued+on_db, [ParameterList(self.configurations[c]) for c in self.racing])
+
+
 
 
                 # sort racing by sum of ranks (low sum of ranks are run first)
                 racing = list(self.racing)
                 racing.sort(key = lambda c: self.configurations_dict[c]["sum_of_ranks"])
-
-                # recompute missing (with new race information, sorted by sum of ranks)
-                missing = filter(lambda x: x not in enqueued+on_db, [ParameterList(self.configurations[c]) for c in self.racing])
 
                 # if there are no missing experiments for this iteration, move on
                 if not missing:

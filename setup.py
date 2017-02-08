@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name = "json2run",
-    version = "0.4",
+    version = "0.5",
     description = "A tool to launch experiments.",
     author="Tommaso Urli",
     author_email="tunnuz@gmail.com",
