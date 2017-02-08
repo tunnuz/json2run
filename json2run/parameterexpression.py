@@ -659,7 +659,7 @@ class Flag(Leaf):
             self.name = obj["name"]
 
     def next(self):
-        return [Parameter(self.name, None, None, self.separator, self.prefix)]
+        return [Parameter(self.name, None, self.separator, self.prefix)]
 
     def count(self):
         return 1
