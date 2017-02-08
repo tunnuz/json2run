@@ -1,5 +1,5 @@
 from pymongo.database import Database
-from pymongo.mongo_client import MongoClient
+from pymongo.connection import Connection
 from threading import Lock
 from bson.objectid import ObjectId
 import sys
@@ -122,7 +122,7 @@ class Persistent(object):
         Persistent.config = config
             
         try:
-            Persistent.connection = MongoClient(config["host"], config["port"])
+            Persistent.connection = Connection(config["host"], config["port"])
             Persistent.database = Persistent.connection[config["database"]]
             Persistent.database.authenticate(config["user"], config["pass"])
         except Exception, e:
@@ -133,7 +133,7 @@ class Persistent(object):
     def disconnect():
         """Disconnect from database."""
         
-        Persistent.connection.close()
+        Persistent.connection.disconnect()
         Persistent.database = None
 
     def load(self, obj):

@@ -452,7 +452,6 @@ class And(Inner):
     def __repr__(self):
         postprocessors = (', "postprocessors": [' + ",".join([p.__repr__() for p in self.postprocessors]) + ' ]') if len(self.postprocessors) else ""
         descendants = (', "descendants": [' + ",".join([p.__repr__() for p in self.descendants]) + ' ]') if len(self.descendants) else ""
-
         return json.dumps(json.loads('{ "type": "and" ' + postprocessors + descendants + ' }', object_pairs_hook=collections.OrderedDict), indent = 4)
 
 class Or(Inner):
