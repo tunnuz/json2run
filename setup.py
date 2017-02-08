@@ -9,8 +9,9 @@ setup(
     license = "MIT",
     packages = ["json2run"],
     install_requires = [
-        "pymongo",
-        "scipy"
+        "pymongo==2.8",
+        "numpy",
+	"scipy"
     ],
-    scripts = ["./j2r"]
+    scripts = ["./j2r", "./j2ranalyze"]
 )

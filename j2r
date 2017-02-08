@@ -211,18 +211,16 @@ def main():
             # compute (on db) average experiment execution time and last experiment time
             ad = Persistent.database["experiments"].aggregate([{"$match":{"date_stopped":{"$exists":True}, "batch": { "$in": unfinished } }},{"$group":{"_id":"$batch","last_experiment":{"$max":"$date_stopped"}, "duration":{"$avg":{"$add":[{"$subtract":[{"$second":"$date_stopped"},{"$second":"$date_started"}]},{"$multiply":[60.0,{"$subtract":[{"$minute":"$date_stopped"},{"$minute":"$date_started"}]}]},{"$multiply":[3600.0,{"$subtract":[{"$hour":"$date_stopped"},{"$hour":"$date_started"}]}]},{"$multiply":[86400.0,{"$subtract":[{"$dayOfYear":"$date_stopped"},{"$dayOfYear":"$date_started"}]}]},{"$multiply":[977616000.0,{"$subtract":[{"$year":"$date_stopped"},{"$year":"$date_started"}]}]}]}}}}])
             avg_duration = {}
-            for entry in ad:
+            for entry in ad["result"]:
                 avg_duration[entry["_id"]] = entry["duration"]
-
             last_experiment = {}
-            for entry in ad:
+            for entry in ad["result"]:
                 last_experiment[entry["_id"]] = entry["last_experiment"]
 
             fields.extend(["ETA", "Active"])
             aggregate = True
 
         except Exception as e:
-            # log.error("Error %s" % e)
             log.info("The database doesn't support some of the features.")
 
         Row = namedtuple("Row", fields)
@@ -558,8 +556,6 @@ def prepare_args(parser):
     parser.add_argument("--slurm-cpus", "-slc", required = False, type = int, default=1, help="cpus per task")
     parser.add_argument("--slurm-partition", "-slq", required = False, type = str, default="", help="the slurm partition(s) to submit to, can specify multiple comma separated partitions")
     parser.add_argument("--slurm-mem", "-slm", required = False, type = int, default=0, help="memory requested per task in MB (defaults to cluster default)")
-
-
 
     parser.add_help = True
     parser.prefix_chars = "-"
