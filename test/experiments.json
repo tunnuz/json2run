@@ -1,0 +1,15 @@
+{
+    "type": "and",
+    "descendants": [
+        {
+            "type": "discrete",
+            "name": "variant",
+            "values": { "min": 1, "max": 10, "step": 1 }
+        },
+        {
+            "type": "discrete",
+            "name": "instance",
+            "values": { "min": 10, "max": 20, "step": 1 }
+        }
+    ]
+}

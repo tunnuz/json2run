@@ -1,0 +1,11 @@
+.DS_Store
+.hg
+.hgignore
+.hgtags
+build
+dist
+.pyc
+.swp
+json2run.egg-info
+__pycache__
+.eggs
