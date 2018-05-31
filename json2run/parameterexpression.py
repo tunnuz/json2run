@@ -9,11 +9,8 @@ from sys import version_info
 if version_info[0] >= 3:
     from functools import reduce
 
-
 class ParameterExpression(object):
     """A class representing a tree-like pseudo-logical expression composed of several
-    kind of nodes, each one with its own parameter-generation capabilities. Each
-    node, aside from producing sets of parameters, can be configured with a number
     of post-processors, whose aim is to modify on-the-fly the set of parameters
     generated in the nodes below."""
 
@@ -225,9 +222,6 @@ class ParameterExpression(object):
             f.close()
         except Exception as e:
             print(e)
-
-    def headers(self):
-        """Return headers of this parameter expression."""
 
         h = set()
         self.__init__()

@@ -367,15 +367,6 @@ class Expression(PostProcessor):
                     
         except Exception as e:
             print(e)
-            return params
-            
-        return params
-        
-    def __repr__(self):
-        
-        sep = ""
-        if self.separator:
-            sep = '"separator": "%s", ' % self.separator
         
         pre = ""
         if self.prefix:

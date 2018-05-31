@@ -41,7 +41,7 @@ class Batch(Persistent):
                     log.error("'%s' is a mandatory parameter." % needed)
 
             if missing:
-                raise ValueError()
+                raise ValueError
             
             # initialize generator, dates
             self.generator = self["generator"]

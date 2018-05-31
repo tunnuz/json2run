@@ -138,7 +138,7 @@ def main(args):
                 sys.exit(1)
 
             if not args.input:
-                log.error("You need to provide a source JSON file.")
+                log.errro("You need to provide a source JSON file.")
                 sys.exit(1)
 
             pex = from_file(args.input)
