@@ -597,10 +597,13 @@ def print_table(rows):
         for line in rows:
             print(pattern % tuple(line))
 
-# Run
-if __name__ == "__main__":
-    # Add options parser
+def j2r():
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
     prepare_args(parser)
     args = parser.parse_args()
     main(args)
+
+# Run
+if __name__ == "__main__":
+    # Add options parser
+    j2r()
