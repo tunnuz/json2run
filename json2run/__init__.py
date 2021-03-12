@@ -5,7 +5,7 @@ from . persistent import Persistent
 from . experiment import Experiment
 from . j2r import j2r
 
-VERSION = "0.5.1"
+VERSION = "1.0.0"
 
 __all__ = [
     "ParameterList", 
