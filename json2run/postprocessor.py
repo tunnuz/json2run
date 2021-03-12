@@ -150,7 +150,7 @@ class Rounding(PostProcessor):
     def _process(self, param):
         """Truncates the value of the matching parameters to a certain precision"""
         
-        param_value = floor(float(param.value) * pow(10, self.decimal_digits) + 0.5) / pow(10, self.decimal_digits)
+        param_value = floor(param.value * pow(10, self.decimal_digits) + 0.5) / pow(10, self.decimal_digits)
         if self.decimal_digits != 0:
             if self.force_precision:
                     param_value = ("{:."+ str(self.decimal_digits) +"f}").format(param_value)
@@ -264,17 +264,17 @@ class Hammersley(PostProcessor):
         """Generates the k^{th} Hammersley point set's point of dimension d."""
         
         point = []
-        point.append(float(k) / float(self.points))
+        point.append(k / self.points)
         
         for i in range(d-1):
             p = Hammersley.primes[i]
-            pi, ki, phi = float(p), float(k), 0.0
+            pi, ki, phi = p, k, 0.0
             
             while ki > 0.0:
-                a = float(int(ki) % int(p))
+                a = int(ki) % int(p)
                 phi += a / pi
                 ki = int(ki / p)
-                pi *= float(p)
+                pi *= p
                 
             point.append(phi)
             

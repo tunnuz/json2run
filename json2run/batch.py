@@ -73,7 +73,7 @@ class Batch(Persistent):
     
     def completion(self, greedy = False):
         """Reports completion level of a batch."""
-        return (float(Experiment.get({ "batch": self["_id"] }).count()) / (self.generator.count() * float(self["repetitions"]))) * 100.0
+        return Experiment.get({ "batch": self["_id"] }).count() / (self.generator.count() * self["repetitions"]) * 100.0
     
     def missing(self):
         """Reports the number of missing experiments."""
@@ -313,7 +313,7 @@ class Race(Batch):
         """Compute estimated number of missing experiments."""
         
         (racing, total) = self.racing()        
-        return (self.generator.count() * int(self["repetitions"]) / total - self["iterations_completed"]) * racing
+        return (self.generator.count() * self["repetitions"] // total - self["iterations_completed"]) * racing
 
     def load(self, obj):
         """Load from database"""
