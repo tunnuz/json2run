@@ -48,7 +48,7 @@ class ParameterExpression(object):
 
         # batch definition language: version 2 (compact, incomplete)
         else:
-            name = [k for k in obj.keys() if k is not "match" ][0]
+            name = [k for k in obj.keys() if k != "match" ][0]
 
             if "and" in obj and type(obj["and"]) == list:
                 if "postprocessors" in obj:
