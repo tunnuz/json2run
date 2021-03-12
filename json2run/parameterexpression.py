@@ -667,7 +667,7 @@ class Flag(Leaf):
         return '{ "type": "flag", "name": "'+ self.name +'" }'
 
 def frange(min_v, max_v, step):
-    """Generator, equivalent of xrange for floats."""
+    """Generator, equivalent of range for floats."""
     while min_v <= max_v:
         yield min_v
         min_v += step

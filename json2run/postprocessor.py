@@ -234,7 +234,7 @@ class Hammersley(PostProcessor):
         sample = self.__point(self.sampled+1, len(intervals))
         self.sampled += 1
         
-        for i in xrange(len(intervals)):
+        for i in range(len(intervals)):
             interval = intervals[i]
             scaled = interval.min_v + (interval.max_v - interval.min_v) * sample[i]
             other.append(Parameter(interval.name, scaled, interval.separator, interval.prefix))
@@ -266,7 +266,7 @@ class Hammersley(PostProcessor):
         point = []
         point.append(float(k) / float(self.points))
         
-        for i in xrange(d-1):
+        for i in range(d-1):
             p = Hammersley.primes[i]
             pi, ki, phi = float(p), float(k), 0.0
             
