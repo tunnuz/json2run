@@ -4,6 +4,8 @@
 .hgtags
 build
 dist
-*.pyc
-*.swp
+.pyc
+.swp
 json2run.egg-info
+__pycache__
+.eggs

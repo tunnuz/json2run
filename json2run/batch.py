@@ -1,12 +1,17 @@
-from persistent import Persistent
+from __future__ import print_function
+from . persistent import Persistent
 import sys
 from bson.objectid import ObjectId
 from json2run import *
-from parameterexpression import *
+from . parameterexpression import *
 from threading import *
 from multiprocessing import cpu_count
-from experiment import *
-from Queue import Queue
+from . experiment import *
+from sys import version_info
+if version_info[0] < 3:
+    from Queue import Queue
+else:
+    from queue import Queue
 import datetime, time
 from time import sleep
 from scipy.stats import rankdata, chi2, t as tstudent, wilcoxon
@@ -68,7 +73,7 @@ class Batch(Persistent):
     
     def completion(self, greedy = False):
         """Reports completion level of a batch."""
-        return (float(Experiment.get({ "batch": self["_id"] }).count()) / (self.generator.count() * float(self["repetitions"]))) * 100.0
+        return Experiment.get({ "batch": self["_id"] }).count() / (self.generator.count() * self["repetitions"]) * 100.0
     
     def missing(self):
         """Reports the number of missing experiments."""
@@ -222,7 +227,7 @@ class Race(Batch):
                     log.error("'%s' is a mandatory parameter." % needed)
 
             if missing:
-                raise ValueError
+                raise ValueError()
                 
             # initialize generator, dates
             self.generator = self["generator"]
@@ -283,11 +288,11 @@ class Race(Batch):
         
         (racing, total) = self.racing()
 
-	if racing > 1:	
-	    try:
-	        p_value = " (p-value: %.2f)" % self["p_value"]
-	    except:
-	        p_value = ""
+        if racing > 1:
+            try:
+	            p_value = " (p-value: %.2f)" % self["p_value"]
+            except:
+                p_value = ""
         else:
             p_value = ""
         return "%d / %d%s" % (racing, total, p_value)
@@ -308,7 +313,7 @@ class Race(Batch):
         """Compute estimated number of missing experiments."""
         
         (racing, total) = self.racing()        
-        return (self.generator.count() * int(self["repetitions"]) / total - self["iterations_completed"]) * racing
+        return (self.generator.count() * self["repetitions"] // total - self["iterations_completed"]) * racing
 
     def load(self, obj):
         """Load from database"""
@@ -526,7 +531,7 @@ class Race(Batch):
 
         for e in range(len(self.executed)):
            if e >= self.iterations_completed and len(self.executed[e]):
-               print "Iteration %d has %d experiments to go." % (e, len(self.racing) - len(self.executed[e]))
+               print("Iteration %d has %d experiments to go." % (e, len(self.racing) - len(self.executed[e])))
 
         # only process current iteration (to be compliant with race)
         if self.iterations_completed != experiment.iteration:
@@ -669,7 +674,7 @@ class Race(Batch):
             
                 if p_value <= self.alpha:
                      
-                    t_student = tstudent.ppf(1-self.alpha/2, (n-1)*(k-1)) * sqrt(2 * (n * a - sum([ pow(rk,2) for rk in sum_of_ranks ])) / ((n-1) * (k-1)))
+                    t_student = tstudent.ppf(1 - self.alpha / 2, (n-1) * (k-1)) * sqrt(2 * (n * a - sum([ pow(rk,2) for rk in sum_of_ranks ])) / ((n-1) * (k-1)))
                     best_sum = min(sum_of_ranks)
                 
                     log.info("t: %f" % (t_student))
@@ -745,7 +750,7 @@ class ExperimentQueue(Queue):
             while self.unfinished_tasks:
                 remaining = endtime - time.time()
                 if remaining <= 0.0:
-                    raise NotFinished
+                    raise NotFinished()
                 self.all_tasks_done.wait(remaining)
         finally:
             self.all_tasks_done.release()

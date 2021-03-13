@@ -1,7 +1,8 @@
+from __future__ import print_function
 import json
 from threading import *
-from persistent import *
-from parameterexpression import *
+from . persistent import *
+from . parameterexpression import *
 from time import sleep
 import random
 from datetime import datetime
@@ -64,7 +65,7 @@ class ExperimentRunner(Thread):
                 except Exception as e:
                     
                     if not self.current.interrupted:
-                        print "Failed running experiment: ", e
+                        print("Failed running experiment: ", e)
                                     
                 self.current["date_stopped"] = datetime.utcnow()
             
@@ -111,7 +112,7 @@ class ExperimentRunner(Thread):
             
         except Exception as e:
             
-            print "Failed reading experiment results: ", e
+            print("Failed reading experiment results: ", e)
                         
             # output wasn't valid JSON, ignore result (don't save it)
             self.current.interrupted = True

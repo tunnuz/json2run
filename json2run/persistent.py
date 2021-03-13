@@ -1,5 +1,6 @@
+from __future__ import print_function
 from pymongo.database import Database
-from pymongo.connection import Connection
+from pymongo.mongo_client import MongoClient
 from threading import Lock
 from bson.objectid import ObjectId
 import sys
@@ -66,10 +67,10 @@ class Persistent(object):
                 return self.inner.items()[int(field)][1]
             except ValueError:
                 # not an index
-                raise KeyError
+                raise KeyError()
             except IndexError:
                 # no more elements 
-                raise StopIteration
+                raise StopIteration()
             
     def __setitem__(self, field, value):
         """Subscript setter."""
@@ -91,7 +92,7 @@ class Persistent(object):
         
             self["_id"] = database[self.collection()].save(self.inner)
         except Exception as e:
-            print "Failed saving on database: ", e
+            print("Failed saving on database: ", e)
 
     @classmethod
     def collection(cls):
@@ -122,18 +123,18 @@ class Persistent(object):
         Persistent.config = config
             
         try:
-            Persistent.connection = Connection(config["host"], config["port"])
+            Persistent.connection = MongoClient(config["host"], config["port"])
             Persistent.database = Persistent.connection[config["database"]]
             Persistent.database.authenticate(config["user"], config["pass"])
-        except Exception, e:
-            print e
+        except Exception as e:
+            print(e)
             sys.exit(1)
 
     @staticmethod
     def disconnect():
         """Disconnect from database."""
         
-        Persistent.connection.disconnect()
+        Persistent.connection.close()
         Persistent.database = None
 
     def load(self, obj):

@@ -1,8 +1,9 @@
+from __future__ import print_function
 import re
 from math import *
 import json
 
-from parameter import *
+from . parameter import *
 
 class PostProcessor(object):
     """A class which takes a list of generated parameters and transforms them."""
@@ -149,7 +150,7 @@ class Rounding(PostProcessor):
     def _process(self, param):
         """Truncates the value of the matching parameters to a certain precision"""
         
-        param_value = floor(float(param.value) * pow(10, self.decimal_digits) + 0.5) / pow(10, self.decimal_digits)
+        param_value = floor(param.value * pow(10, self.decimal_digits) + 0.5) / pow(10, self.decimal_digits)
         if self.decimal_digits != 0:
             if self.force_precision:
                     param_value = ("{:."+ str(self.decimal_digits) +"f}").format(param_value)
@@ -233,7 +234,7 @@ class Hammersley(PostProcessor):
         sample = self.__point(self.sampled+1, len(intervals))
         self.sampled += 1
         
-        for i in xrange(len(intervals)):
+        for i in range(len(intervals)):
             interval = intervals[i]
             scaled = interval.min_v + (interval.max_v - interval.min_v) * sample[i]
             other.append(Parameter(interval.name, scaled, interval.separator, interval.prefix))
@@ -263,17 +264,17 @@ class Hammersley(PostProcessor):
         """Generates the k^{th} Hammersley point set's point of dimension d."""
         
         point = []
-        point.append(float(k)/float(self.points))
+        point.append(k / self.points)
         
-        for i in xrange(d-1):
+        for i in range(d-1):
             p = Hammersley.primes[i]
-            pi, ki, phi = float(p), float(k), 0.0
+            pi, ki, phi = p, k, 0.0
             
             while ki > 0.0:
-                a = float(int(ki) % int(p))
-                phi += a/pi
-                ki = int(ki/p)
-                pi *= float(p)
+                a = int(ki) % int(p)
+                phi += a / pi
+                ki = int(ki / p)
+                pi *= p
                 
             point.append(phi)
             
@@ -364,17 +365,8 @@ class Expression(PostProcessor):
                 
                 params.append(IntervalParameter(self.result, min_v, max_v, self.separator, self.prefix))
                     
-        except Exception, e:
-            print e
-            return params
-            
-        return params
-        
-    def __repr__(self):
-        
-        sep = ""
-        if self.separator:
-            sep = '"separator": "%s", ' % self.separator
+        except Exception as e:
+            print(e)
         
         pre = ""
         if self.prefix:

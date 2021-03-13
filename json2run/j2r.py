@@ -1,23 +1,64 @@
 #!/usr/bin/env python
-import sys
+# PYTHON_ARGCOMPLETE_OK
+from __future__ import print_function
+import argcomplete
+from argcomplete.completers import ChoicesCompleter
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter   
+from json2run import Persistent, ParameterExpression
+import pandas as pd
+from sys import stdout
 import re
-import json
-from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-from json2run import *
-from pymongo import *
-from multiprocessing import *
-from collections import namedtuple
-import logging as log
-from multiprocessing import cpu_count
-import datetime
-from math import floor
+from collections import OrderedDict
 
-def main():
+def prepare_args(parser):
+    """Prepare the arguments for the program"""
+    parser.add_argument("--input", "-i", required = False, type=str, help="the JSON input file")
+    parser.add_argument("--executable", "-e", required = False, type=str, help="the executable to use")
+    actions = ("batch-info", "show-best", "mark-unfinished", "rename-batch", "delete-batch", "dump-experiments", "show-winning", "run-batch", "run-race", "list-batches", "print-cll", "print-csv", "set-repetitions", "set-generator")
+    parser.add_argument("--action", "-a", required = False, type=str, default = "print-cll", choices=actions, help="the action to execute")
+    parser.add_argument("--repetitions", "-r", required = False, type=int, default = 1, help="number of repetitions of each experiment on a single instance")
+    parser.add_argument("--instance-param", "-ip", required = False, type=str, help="name of the parameter representing the instance in a race")
+    parser.add_argument("--performance-param", "-pp", required = False, type=str, help="name of the parameter representing the performance metric in a races")
+    parser.add_argument("--initial-block", "-ib", required = False, type=int, default = 10, help="size of the initial block of experiments in a race")
+    parser.add_argument("--confidence", required = False, type=float, default = 0.05, help="confidence for the hypotesis testing in a race")
+    parser.add_argument("--parallel-threads", "-p", required = False, type = int, help="number of parallel threads onto which to run the experiments")
+    parser.add_argument("--greedy", "-g", required = False, type = bool, default = False, help="whether the experiment can be reused from every batch in the database (true) or just the current one (false)")
+    parser.add_argument("--log-file", required = False, type = str, help="file where the whole log is written")
+    parser.add_argument("--log-level", required = False, type = str, default="info", choices=["warning", "error", "info"] )
+    parser.add_argument("--db-host", "-dh", required = False, type = str, default=Persistent.config["host"], help="the host where the database is installed")
+    parser.add_argument("--db-port", "-dp", required = False, type = int, default=Persistent.config["port"], help="the port onto which the database is served")
+    parser.add_argument("--db-database", "-dd", required = False, type = str, default=Persistent.config["database"], help="the database name")
+    parser.add_argument("--db-user", "-du", required = False, type = str, default=Persistent.config["user"], help="the database username")
+    parser.add_argument("--db-pass", "-dx", required = False, type = str, default=Persistent.config["pass"], help="the database password")
+    parser.add_argument("--batch-name", "-n", required = False, type = str, help = "name of the batch on the database")
+    parser.add_argument("--scm", required = False, type = str, default="", choices=["", "git", "mercurial"], help="kind of SCM used")
+    parser.add_argument("--seed", "-s", required = False, type = int, default=0, help="seed to use, e.g. for race")
+    parser.add_argument("--new-name", "-nn", required = False, type = str, help="new name for the batch")
+    parser.add_argument("--prefix", "-pre", required = False, type = str, default=ParameterExpression.def_prefix, help="prefix character(s) for arguments")
+    parser.add_argument("--filter", "-f", required = False, type = str, help="filter printouts")
+    parser.add_argument("--separator", "-sep", required = False, type = str, default=ParameterExpression.def_separator, help="separator character(s) for arguments")
+    parser.add_argument("--stats", "-st", required = False, type = str, nargs="+", help="list of stats to export in CSV")
+    parser.add_argument("--limit", "-l", required = False, type = int, default=0, help="how many batches to show in the list")
 
-    # Add options parser
-    parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
-    prepare_args(parser)
-    args = parser.parse_args()
+    parser.add_help = True
+    parser.prefix_chars = "-"
+    parser.description = "Generates a number of parameter configurations from a JSON definition file, then uses them to either run experiments, tune parameter or just print out the parameter configurations."
+    # This is for argument autocompletion
+    argcomplete.autocomplete(parser)
+
+def main(args):
+    import sys
+    import re
+    import json
+    from json2run import ParameterList, Batch, Race, Experiment
+    from collections import namedtuple
+    import logging as log
+    import datetime
+    from math import floor    
+    from multiprocessing import cpu_count 
+    
+    if not args.parallel_threads:
+        args.parallel_threads = cpu_count()
 
     # setup scm
     Persistent.scm = args.scm
@@ -48,10 +89,10 @@ def main():
 
         if args.action == "print-cll":
             while pex.has_more():
-                print ParameterExpression.format(args.executable, pex.next(), args.separator, args.prefix)
+                print(ParameterExpression.format(args.executable, pex.next(), args.separator, args.prefix))
         else:
             headers = pex.headers()
-            print ",".join(headers)
+            print(",".join(headers))
             while pex.has_more():
                 n = pex.next()
                 l = []
@@ -67,7 +108,7 @@ def main():
                     else:
                         l.append("")
 
-                print ",".join(l)
+                print(",".join(l))
 
     # run a batch
     elif args.action == "run-batch":
@@ -179,7 +220,7 @@ def main():
         if args.limit != 0:
             batches.limit(args.limit)
 
-        print "Batches matching criteria: ", batches.count()
+        print("Batches matching criteria: ", batches.count())
 
         # get average experiment run time
         aggregate = False
@@ -191,10 +232,8 @@ def main():
         batches.rewind()
 
         try:
-
             # compute (on db) average experiment execution time and last experiment time
             ad = Persistent.database["experiments"].aggregate([{"$match":{"date_stopped":{"$exists":True}, "batch": { "$in": unfinished } }},{"$group":{"_id":"$batch","last_experiment":{"$max":"$date_stopped"}, "duration":{"$avg":{"$add":[{"$subtract":[{"$second":"$date_stopped"},{"$second":"$date_started"}]},{"$multiply":[60.0,{"$subtract":[{"$minute":"$date_stopped"},{"$minute":"$date_started"}]}]},{"$multiply":[3600.0,{"$subtract":[{"$hour":"$date_stopped"},{"$hour":"$date_started"}]}]},{"$multiply":[86400.0,{"$subtract":[{"$dayOfYear":"$date_stopped"},{"$dayOfYear":"$date_started"}]}]},{"$multiply":[977616000.0,{"$subtract":[{"$year":"$date_stopped"},{"$year":"$date_started"}]}]}]}}}}])
-            print dir(ad)
             avg_duration = {}
             for entry in ad["result"]:
                 avg_duration[entry["_id"]] = entry["duration"]
@@ -407,7 +446,7 @@ def main():
             batch["generator"] = json.loads(batch["generator"])
             if batch["type"] == "race":
                 batch["configurations"] = json.loads(batch["configurations"])
-            print json.dumps(batch, indent = 4)
+            print(json.dumps(batch, indent = 4))
         except Exception as e:
             log.error(e)
             log.error("Error loading batch.")
@@ -428,7 +467,7 @@ def main():
                 system.exit(1)
 
             winning = [j for j in json.loads(batch["configurations"]) if j["sum_of_ranks"]]
-            print json.dumps(winning, indent = 4)
+            print(json.dumps(winning, indent = 4))
 
         except Exception as e:
             log.error(e)
@@ -459,7 +498,7 @@ def main():
                 if j["sum_of_ranks"] == best[0] and j != best[0]:
                     best.append(j)
 
-            print json.dumps(best, indent = 4)
+            print(json.dumps(best, indent = 4))
 
         except Exception as e:
             log.error(e)
@@ -470,7 +509,7 @@ def main():
     elif args.action == "dump-experiments":
 
         if not args.batch_name:
-            log.error("You need to provide a batch name to remove.")
+            log.error("You need to provide a batch name to dump.")
             sys.exit(1)
 
         batch = None
@@ -487,61 +526,32 @@ def main():
 
         # stat headers
         e = experiments.next()
-        stat_head = map(str, e["stats"].keys()) if "stats" in e else []
-        if args.stats:
-            stat_head = args.stats
+        #stat_head = list(map(str, e["stats"].keys())) if "stats" in e else []
+        #if args.stats:
+        #    stat_head = args.stats
 
         batch.initialize_experiments()
-        generator = batch.generator
-        head = generator.headers()
-        full_head = head[:]
-        full_head.extend(stat_head)
+        #generator = batch.generator
+        #head = generator.headers()
+        #full_head = head[:]
+        #full_head.extend(stat_head)                      
+        #
+        ##print(",".join(full_head))
+        #df = pd.DataFrame()
+        #
+        #experiments = Experiment.get({ "batch": batch["_id"] })
+        #for e in experiments:
+        #    l = OrderedDict([(h, e["parameters"][h]) if e["parameters"][h] is not None else True for h in head if h in e["parameters"]])
+        #    if stat_head:                                
+        #        l.update([(s,  e["stats"][s]) if s in e["stats"] else None for s in stat_head])
+        #    df = pd.concat([df, pd.DataFrame(l, index=[0])])
+        df = pd.DataFrame(pd.io.json.json_normalize(Experiment.get({ "batch": batch["_id"] })))
+        df.set_index('_id')
+        
+        df.to_csv(sys.stdout)
 
-        print ",".join(full_head)
-
-        experiments = Experiment.get({ "batch": batch["_id"] })
-        for e in experiments:
-            l = [(str(e["parameters"][h]) if e["parameters"][h] != None else "true") if h in e["parameters"] else "" for h in head]
-            if stat_head:
-                l.extend((str(e["stats"][s]) if e["stats"][s] != None else "") if s in e["stats"] else "" for s in stat_head)
-
-            print ",".join(l)
 
     Persistent.disconnect()
-
-def prepare_args(parser):
-    """Prepare the arguments for the program"""
-    parser.add_argument("--input", "-i", required = False, type=str, help="the JSON input file")
-    parser.add_argument("--executable", "-e", required = False, type=str, help="the executable to use")
-    parser.add_argument("--action", "-a", required = False, type=str, default = "print-cll", choices=["batch-info", "show-best", "mark-unfinished", "rename-batch", "delete-batch", "dump-experiments", "show-winning", "run-batch", "run-race", "list-batches", "print-cll", "print-csv", "set-repetitions", "set-generator"], help="the action to execute")
-    parser.add_argument("--repetitions", "-r", required = False, type=int, default = 1, help="number of repetitions of each experiment on a single instance")
-    parser.add_argument("--instance-param", "-ip", required = False, type=str, help="name of the parameter representing the instance in a race")
-    parser.add_argument("--performance-param", "-pp", required = False, type=str, help="name of the parameter representing the performance metric in a races")
-    parser.add_argument("--initial-block", "-ib", required = False, type=int, default = 10, help="size of the initial block of experiments in a race")
-    parser.add_argument("--confidence", required = False, type=float, default = 0.05, help="confidence for the hypotesis testing in a race")
-    parser.add_argument("--batch-name", "-n", required = False, type = str, help = "name of the batch on the database")
-    parser.add_argument("--parallel-threads", "-p", required = False, type = int, default = cpu_count(), help="number of parallel threads onto which to run the experiments")
-    parser.add_argument("--greedy", "-g", required = False, type = bool, default = False, help="whether the experiment can be reused from every batch in the database (true) or just the current one (false)")
-    parser.add_argument("--log-file", required = False, type = str, help="file where the whole log is written")
-    parser.add_argument("--log-level", required = False, type = str, default="info", choices=["warning", "error", "info"] )
-    parser.add_argument("--db-host", "-dh", required = False, type = str, default=Persistent.config["host"], help="the host where the database is installed")
-    parser.add_argument("--db-port", "-dp", required = False, type = int, default=Persistent.config["port"], help="the port onto which the database is served")
-    parser.add_argument("--db-database", "-dd", required = False, type = str, default=Persistent.config["database"], help="the database name")
-    parser.add_argument("--db-user", "-du", required = False, type = str, default=Persistent.config["user"], help="the database username")
-    parser.add_argument("--db-pass", "-dx", required = False, type = str, default=Persistent.config["pass"], help="the database password")
-    parser.add_argument("--scm", required = False, type = str, default="", choices=["", "git", "mercurial"], help="kind of SCM used")
-    parser.add_argument("--seed", "-s", required = False, type = int, default=0, help="seed to use, e.g. for race")
-    parser.add_argument("--new-name", "-nn", required = False, type = str, help="new name for the batch")
-    parser.add_argument("--prefix", "-pre", required = False, type = str, default=ParameterExpression.def_prefix, help="prefix character(s) for arguments")
-    parser.add_argument("--filter", "-f", required = False, type = str, help="filter printouts")
-    parser.add_argument("--separator", "-sep", required = False, type = str, default=ParameterExpression.def_separator, help="separator character(s) for arguments")
-    parser.add_argument("--stats", "-st", required = False, type = str, nargs="+", help="list of stats to export in CSV")
-    parser.add_argument("--limit", "-l", required = False, type = int, default=0, help="how many batches to show in the list")
-
-
-    parser.add_help = True
-    parser.prefix_chars = "-"
-    parser.description = "Generates a number of parameter configurations from a JSON definition file, then uses them to either run experiments, tune parameter or just print out the parameter configurations."
 
 def from_file(file):
     """Generates parameter expression from file name."""
@@ -550,13 +560,13 @@ def from_file(file):
     try:
         input_file = open(file, "r")
         json_str = input_file.read()
-    except Exception, e:
+    except Exception as e:
         log.error("Impossible to open file " + file + " for reading.")
         sys.exit(1)
 
     try:
         pex = ParameterExpression.from_string(json_str)
-    except Exception, e:
+    except Exception as e:
         log.error("Impossible to generate ParameterExpression.")
         log.error(e)
         sys.exit(1)
@@ -582,11 +592,18 @@ def print_table(rows):
         pattern = " | ".join(formats)
         hpattern = " | ".join(hformats)
         separator = "-+-".join(['-' * n for n in lens])
-        print hpattern % tuple(headers)
-        print separator
+        print(hpattern % tuple(headers))
+        print(separator)
         for line in rows:
-            print pattern % tuple(line)
+            print(pattern % tuple(line))
+
+def j2r():
+    parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
+    prepare_args(parser)
+    args = parser.parse_args()
+    main(args)
 
 # Run
 if __name__ == "__main__":
-    main()
+    # Add options parser
+    j2r()

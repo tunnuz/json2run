@@ -1,14 +1,16 @@
-from postprocessor import *
-from parameter import *
+from __future__ import print_function
+from . postprocessor import *
+from . parameter import *
 import json
 import collections
 import math
 import os
+from sys import version_info
+if version_info[0] >= 3:
+    from functools import reduce
 
 class ParameterExpression(object):
     """A class representing a tree-like pseudo-logical expression composed of several
-    kind of nodes, each one with its own parameter-generation capabilities. Each
-    node, aside from producing sets of parameters, can be configured with a number
     of post-processors, whose aim is to modify on-the-fly the set of parameters
     generated in the nodes below."""
 
@@ -46,7 +48,7 @@ class ParameterExpression(object):
 
         # batch definition language: version 2 (compact, incomplete)
         else:
-            name = [k for k in obj.keys() if k is not "match" ][0]
+            name = [k for k in obj.keys() if k != "match" ][0]
 
             if "and" in obj and type(obj["and"]) == list:
                 if "postprocessors" in obj:
@@ -218,11 +220,8 @@ class ParameterExpression(object):
             f  = open(file, 'w')
             f.write(str(self)+"\n")
             f.close()
-        except Exception, e:
-            print e
-
-    def headers(self):
-        """Return headers of this parameter expression."""
+        except Exception as e:
+            print(e)
 
         h = set()
         self.__init__()
@@ -668,7 +667,7 @@ class Flag(Leaf):
         return '{ "type": "flag", "name": "'+ self.name +'" }'
 
 def frange(min_v, max_v, step):
-    """Generator, equivalent of xrange for floats."""
+    """Generator, equivalent of range for floats."""
     while min_v <= max_v:
         yield min_v
         min_v += step
