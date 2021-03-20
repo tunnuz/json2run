@@ -335,7 +335,7 @@ class Expression(PostProcessor):
         try:
             # remove old parameter, if same name
             if self.pattern and (self.pattern.match(self.result)):
-                params = filter(lambda x: x.name != self.result, params)
+                params = list(filter(lambda x: x.name != self.result, params))
             
             
             if not self.interval:

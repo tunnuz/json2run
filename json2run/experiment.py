@@ -95,10 +95,9 @@ class ExperimentRunner(Thread):
     def terminate(self):
         """Get experiment result, save it, or kill experiment."""
         try:
-
-            # read from stdout
-            output = "".join(self.out)
-            errs = "".join(self.err)
+            # read from stdout   
+            output = self.out.decode('utf8')
+            errs = self.err.decode('utf8')
             self.out = None
             self.err = None
 
@@ -117,14 +116,13 @@ class ExperimentRunner(Thread):
             # if output includes an array of solutions, store it on the database
             if "solutions" in json_output:
                 self.current["solutions"] = json_output["solutions"]
-                del(json_output["solutions"])
+                del(json_output["solutions"])            
 
             # consider the rest of information as stats
             self.current["stats"].update(json_output)
             self.current.save()
 
         except Exception as e:
-
             print("Failed reading experiment results: ", e)
 
             # output wasn't valid JSON, ignore result (don't save it)
@@ -145,7 +143,7 @@ class Experiment(Persistent):
         self.iteration = iteration
         self.interrupted = False
         self.batch = batch
-        self.parameters = filter(lambda p: p.name != "repetition", params)
+        self.parameters = list(filter(lambda p: p.name != "repetition", params))
         self.executable = executable
         self["batch"] = batch.get_id()
         self["executable"] = executable

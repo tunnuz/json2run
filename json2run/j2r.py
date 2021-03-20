@@ -302,12 +302,14 @@ def main():
             sys.exit(1)
 
         sys.stdout.write("Are you sure? ")
+        sys.stdout.flush()
         if re.compile("Y|y|yes|YES").match(sys.stdin.readline()):
             Batch.remove({ "name": batch["name"] })
         else:
             sys.exit(0)
 
         sys.stdout.write("Remove related experiments? ")
+        sys.stdout.flush()
         if re.compile("Y|y|yes|YES").match(sys.stdin.readline()):
             Experiment.remove({ "batch": batch["_id"] })
         else:
@@ -500,7 +502,7 @@ def main():
 
         # stat headers
         e = experiments.next()
-        stat_head = map(str, e["stats"].keys()) if "stats" in e else []
+        stat_head = list(map(str, e["stats"].keys()) if "stats" in e else [])
         if args.stats:
             stat_head = args.stats
 

@@ -418,7 +418,7 @@ class Race(Batch):
                     log.info("Iteration: %s" % current_inst)
                     
                     # recompute missing (with new race information, sorted by sum of ranks)
-                    missing = filter(lambda x: x not in enqueued+on_db, [ParameterList(self.configurations[c]) for c in self.racing])
+                    missing = list(filter(lambda x: x not in enqueued+on_db, [ParameterList(self.configurations[c]) for c in self.racing]))
 
 
                 # sort racing by sum of ranks (low sum of ranks are run first)
@@ -680,7 +680,7 @@ class Race(Batch):
                     for c in self.racing:
                         log.info("%d: (%f - %f = %f) vs. %f" % (c, sum_of_ranks[self.racing.index(c)], best_sum, abs(sum_of_ranks[self.racing.index(c)] - best_sum), t_student))
 
-                    self.racing = filter(lambda i: abs(sum_of_ranks[self.racing.index(i)] - best_sum) <= t_student, self.racing)
+                    self.racing = list(filter(lambda i: abs(sum_of_ranks[self.racing.index(i)] - best_sum) <= t_student, self.racing))
 
             else:
 
@@ -716,7 +716,7 @@ class Race(Batch):
         # conf1: [x,y,z,...]
         # conf2: [i,j,k,...]
 
-        inst_first = map(list, zip(*experiments))
+        inst_first = list(map(list, zip(*experiments)))
         inst_rank = [list(rankdata(l)) for l in inst_first]
 
         # results
@@ -726,7 +726,7 @@ class Race(Batch):
         ties = [[len(filter(lambda x: x == t,a)) for t in set(a)] for a in inst_rank]
 
         # calculate sum of ranks
-        sum_of_ranks = map(sum, conf_rank)
+        sum_of_ranks = list(map(sum, conf_rank))
 
         return conf_rank, inst_rank, sum_of_ranks, ties
 
