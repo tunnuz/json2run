@@ -4,6 +4,7 @@ import json
 import collections
 import math
 import os
+from functools import reduce
 
 class ParameterExpression(object):
     """A class representing a tree-like pseudo-logical expression composed of several
