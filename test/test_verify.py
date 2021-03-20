@@ -17,9 +17,9 @@ with open('test.csv', 'rb') as csvf:
         for arg in test_args:
             if r[arg] != r['o-%s'%arg]:
                 verified = False
-                print "Test failure"
-                print r[arg], r['o-%s'%arg]
+                print("Test failure")
+                print(r[arg], r['o-%s'%arg])
 
     # If verified is true we succeeded
     if verified:
-        print "Test passed!"
+        print("Test passed!")

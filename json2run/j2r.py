@@ -14,7 +14,6 @@ import datetime
 from math import floor, ceil
 
 def main():
-
     # Add options parser
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
     prepare_args(parser)
@@ -64,10 +63,10 @@ def main():
 
         if args.action == "print-cll":
             while pex.has_more():
-                print ParameterExpression.format(args.executable, pex.next(), args.separator, args.prefix)
+                print(ParameterExpression.format(args.executable, pex.next(), args.separator, args.prefix))
         else:
             headers = pex.headers()
-            print ",".join(headers)
+            print(",".join(headers))
             while pex.has_more():
                 n = pex.next()
                 l = []
@@ -83,7 +82,7 @@ def main():
                     else:
                         l.append("")
 
-                print ",".join(l)
+                print(",".join(l))
 
     # run a batch
     elif args.action == "run-batch":
@@ -195,7 +194,7 @@ def main():
         if args.limit != 0:
             batches.limit(args.limit)
 
-        print "Batches matching criteria: ", batches.count()
+        print("Batches matching criteria: ", batches.count())
 
         # get average experiment run time
         aggregate = False
@@ -421,7 +420,7 @@ def main():
             batch["generator"] = json.loads(batch["generator"])
             if batch["type"] == "race":
                 batch["configurations"] = json.loads(batch["configurations"])
-            print json.dumps(batch, indent = 4)
+            print(json.dumps(batch, indent = 4))
         except Exception as e:
             log.error(e)
             log.error("Error loading batch.")
@@ -442,7 +441,7 @@ def main():
                 system.exit(1)
 
             winning = [j for j in json.loads(batch["configurations"]) if j["sum_of_ranks"]]
-            print json.dumps(winning, indent = 4)
+            print(json.dumps(winning, indent = 4))
 
         except Exception as e:
             log.error(e)
@@ -473,7 +472,7 @@ def main():
                 if j["sum_of_ranks"] == best[0] and j != best[0]:
                     best.append(j)
 
-            print json.dumps(best, indent = 4)
+            print(json.dumps(best, indent = 4))
 
         except Exception as e:
             log.error(e)
@@ -511,7 +510,7 @@ def main():
         full_head = head[:]
         full_head.extend(stat_head)
 
-        print ",".join(full_head)
+        print(",".join(full_head))
 
         experiments = Experiment.get({ "batch": batch["_id"] })
         for e in experiments:
@@ -519,7 +518,7 @@ def main():
             if stat_head:
                 l.extend((str(e["stats"][s]) if e["stats"][s] != None else "") if s in e["stats"] else "" for s in stat_head)
 
-            print ",".join(l)
+            print(",".join(l))
 
     Persistent.disconnect()
 
@@ -568,13 +567,13 @@ def from_file(file):
     try:
         input_file = open(file, "r")
         json_str = input_file.read()
-    except Exception, e:
+    except Exception as e:
         log.error("Impossible to open file " + file + " for reading.")
         sys.exit(1)
 
     try:
         pex = ParameterExpression.from_string(json_str)
-    except Exception, e:
+    except Exception as e:
         log.error("Impossible to generate ParameterExpression.")
         log.error(e)
         sys.exit(1)
@@ -600,10 +599,10 @@ def print_table(rows):
         pattern = " | ".join(formats)
         hpattern = " | ".join(hformats)
         separator = "-+-".join(['-' * n for n in lens])
-        print hpattern % tuple(headers)
-        print separator
+        print(hpattern % tuple(headers))
+        print(separator)
         for line in rows:
-            print pattern % tuple(line)
+            print(pattern % tuple(line))
 
 # Run
 if __name__ == "__main__":

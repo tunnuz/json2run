@@ -1,12 +1,12 @@
-from persistent import Persistent
+from . persistent import Persistent
 import sys
 from bson.objectid import ObjectId
 from json2run import *
-from parameterexpression import *
+from . parameterexpression import *
 from threading import *
 from multiprocessing import cpu_count
-from experiment import *
-from Queue import Queue
+from . experiment import *
+from queue import Queue
 import datetime, time
 from time import sleep
 from scipy.stats import rankdata, chi2, t as tstudent, wilcoxon
@@ -285,11 +285,11 @@ class Race(Batch):
 
         (racing, total) = self.racing()
 
-	if racing > 1:
-	    try:
-	        p_value = " (p-value: %.2f)" % self["p_value"]
-	    except:
-	        p_value = ""
+        if racing > 1:
+            try:
+                p_value = " (p-value: %.2f)" % self["p_value"]
+            except:
+                p_value = ""
         else:
             p_value = ""
         return "%d / %d%s" % (racing, total, p_value)
@@ -529,7 +529,7 @@ class Race(Batch):
 
         for e in range(len(self.executed)):
            if e >= self.iterations_completed and len(self.executed[e]):
-               print "Iteration %d has %d experiments to go." % (e, len(self.racing) - len(self.executed[e]))
+               print("Iteration %d has %d experiments to go." % (e, len(self.racing) - len(self.executed[e])))
 
         # only process current iteration (to be compliant with race)
         if self.iterations_completed != experiment.iteration:

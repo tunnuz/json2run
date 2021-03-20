@@ -1,5 +1,5 @@
-from postprocessor import *
-from parameter import *
+from . postprocessor import *
+from . parameter import *
 import json
 import collections
 import math
@@ -218,8 +218,8 @@ class ParameterExpression(object):
             f  = open(file, 'w')
             f.write(str(self)+"\n")
             f.close()
-        except Exception, e:
-            print e
+        except Exception as e:
+            print(e)
 
     def headers(self):
         """Return headers of this parameter expression."""

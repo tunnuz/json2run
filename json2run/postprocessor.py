@@ -2,7 +2,7 @@ import re
 from math import *
 import json
 
-from parameter import *
+from . parameter import *
 
 class PostProcessor(object):
     """A class which takes a list of generated parameters and transforms them."""
@@ -364,8 +364,8 @@ class Expression(PostProcessor):
                 
                 params.append(IntervalParameter(self.result, min_v, max_v, self.separator, self.prefix))
                     
-        except Exception, e:
-            print e
+        except Exception as e:
+            print(e)
             return params
             
         return params

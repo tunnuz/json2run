@@ -91,7 +91,7 @@ class Persistent(object):
         
             self["_id"] = database[self.collection()].save(self.inner)
         except Exception as e:
-            print "Failed saving on database: ", e
+            print("Failed saving on database: ", e)
 
     @classmethod
     def collection(cls):
@@ -125,8 +125,8 @@ class Persistent(object):
             Persistent.connection = Connection(config["host"], config["port"])
             Persistent.database = Persistent.connection[config["database"]]
             Persistent.database.authenticate(config["user"], config["pass"])
-        except Exception, e:
-            print e
+        except Exception as e:
+            print(e)
             sys.exit(1)
 
     @staticmethod
