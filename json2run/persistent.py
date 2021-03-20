@@ -88,8 +88,9 @@ class Persistent(object):
                 self["user"] = Persistent.user()
                 self["host"] = Persistent.host()
                 self["system"] = Persistent.platform()
-        
-            self["_id"] = database[self.collection()].save(self.inner)
+                self["_id"] = database[self.collection()].insert_one(self.inner).inserted_id
+            else:                
+                database[self.collection()].update_one(self["_id"], self.inner)
         except Exception as e:
             print("Failed saving on database: ", e)
 
