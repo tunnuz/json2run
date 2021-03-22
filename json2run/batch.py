@@ -182,8 +182,10 @@ class Batch(Persistent):
             self.interrupted = True
 
             # kill all enqueued and running processes
-            map(lambda x: x.kill(), self.enqueued)
-            map(lambda x: x.kill(), self.running)
+            for x in self.enqueued:
+                x.kill()
+            for x in self.running:
+                x.kill()
 
     def type(self):
         """Describes type of batch."""
@@ -502,8 +504,10 @@ class Race(Batch):
             self.interrupted = True
 
             # kill all running processes
-            map(lambda x: x.kill(), self.enqueued)
-            map(lambda x: x.kill(), self.running)
+            for x in self.enqueued:
+                x.kill()
+            for x in self.running:
+                x.kill()
 
     def experiment_started(self, experiment):
         super(Race, self).experiment_started(experiment)
