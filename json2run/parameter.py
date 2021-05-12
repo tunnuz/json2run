@@ -77,7 +77,7 @@ class IntervalParameter(Parameter):
 def to_intrinsic_type(s):
     """Translates value to its intrinsic type"""
    
-    print "converting", s, "to its intrinsic type"
+    print("converting", s, "to its intrinsic type")
  
     s = str(s)
     if s.isdigit():
@@ -96,15 +96,14 @@ def to_intrinsic_type(s):
                 return "\""+s+"\""
 
 def to_json_compatible(s):
-    
     if type(s) == str:
-	return "\"%s\"" % s
+        return "\"%s\"" % s
     elif type(s) == bool:
-	return "true" if s == True else "false"
+	    return "true" if s == True else "false"
     elif type(s) == float:
-	return "%f" % s
+	    return "%f" % s
     elif type(s) == int:
-	return "%d" % s
+	    return "%d" % s
     else:
-	return "\"%s\"" % s 
+	    return "\"%s\"" % s 
     raise ValueError

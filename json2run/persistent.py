@@ -1,11 +1,12 @@
 from pymongo.database import Database
-from pymongo.connection import Connection
+from pymongo import MongoClient
 from threading import Lock
 from bson.objectid import ObjectId
 import sys
 import os
 from subprocess import *
 import logging as log
+import re
 
 def synchronized(fun):
     """Synchronized decorator, synchronizes a piece of code using the self.sync lock."""
@@ -57,19 +58,26 @@ class Persistent(object):
     
     def __getitem__(self, field):
         """Subscript getter."""
-        try:
+        # try:
             # try getting by key
-            return self.inner[field]
-        except KeyError:
-            # if key not found, could be an index
-            try:
-                return self.inner.items()[int(field)][1]
-            except ValueError:
-                # not an index
-                raise KeyError
-            except IndexError:
-                # no more elements 
-                raise StopIteration
+        return self.inner[field]
+        # except KeyError as e:
+            # # if key not found, could be an index
+            # if re.match('[+\-]?\d+', field):
+            #     i_field = int(field)
+            #     try:
+            #         return self.inner.items()[i_field][1]
+            #     except IndexError:
+            #         # no more elements 
+            #         raise StopIteration
+            # else:
+            #     # not an index
+            #     raise e  
+            # 
+
+    def __iter__(self):
+        for key in self.inner:
+            yield key
             
     def __setitem__(self, field, value):
         """Subscript setter."""
@@ -84,14 +92,15 @@ class Persistent(object):
         
         database = Persistent.database
         try:
-            if "_id" not in self:
+            if "_id" not in self.inner:
                 self["user"] = Persistent.user()
                 self["host"] = Persistent.host()
                 self["system"] = Persistent.platform()
-        
-            self["_id"] = database[self.collection()].save(self.inner)
+                self["_id"] = database[self.collection()].insert_one(self.inner).inserted_id
+            else:                
+                database[self.collection()].replace_one({ '_id': self["_id"]}, self.inner)
         except Exception as e:
-            print "Failed saving on database: ", e
+            print("Failed saving on database: ", e)
 
     @classmethod
     def collection(cls):
@@ -122,18 +131,18 @@ class Persistent(object):
         Persistent.config = config
             
         try:
-            Persistent.connection = Connection(config["host"], config["port"])
+            Persistent.connection = MongoClient(config["host"], config["port"])
             Persistent.database = Persistent.connection[config["database"]]
             Persistent.database.authenticate(config["user"], config["pass"])
-        except Exception, e:
-            print e
+        except Exception as e:
+            print(e)
             sys.exit(1)
 
     @staticmethod
     def disconnect():
         """Disconnect from database."""
         
-        Persistent.connection.disconnect()
+        Persistent.connection.close()
         Persistent.database = None
 
     def load(self, obj):
@@ -162,7 +171,7 @@ class Persistent(object):
         """Run command on the shell, report stdout, stderr"""
         proc = Persistent.run(cmd)
         proc.wait()
-        output = "".join(map(lambda x: x.rstrip(), proc.stdout))
+        output = "".join(map(lambda x: str(x).rstrip(), proc.stdout))
         return output
 
     @staticmethod

@@ -2,7 +2,7 @@ import re
 from math import *
 import json
 
-from parameter import *
+from . parameter import *
 
 class PostProcessor(object):
     """A class which takes a list of generated parameters and transforms them."""
@@ -233,7 +233,7 @@ class Hammersley(PostProcessor):
         sample = self.__point(self.sampled+1, len(intervals))
         self.sampled += 1
         
-        for i in xrange(len(intervals)):
+        for i in range(len(intervals)):
             interval = intervals[i]
             scaled = interval.min_v + (interval.max_v - interval.min_v) * sample[i]
             other.append(Parameter(interval.name, scaled, interval.separator, interval.prefix))
@@ -265,7 +265,7 @@ class Hammersley(PostProcessor):
         point = []
         point.append(float(k)/float(self.points))
         
-        for i in xrange(d-1):
+        for i in range(d-1):
             p = Hammersley.primes[i]
             pi, ki, phi = float(p), float(k), 0.0
             
@@ -335,7 +335,7 @@ class Expression(PostProcessor):
         try:
             # remove old parameter, if same name
             if self.pattern and (self.pattern.match(self.result)):
-                params = filter(lambda x: x.name != self.result, params)
+                params = list(filter(lambda x: x.name != self.result, params))
             
             
             if not self.interval:
@@ -364,8 +364,8 @@ class Expression(PostProcessor):
                 
                 params.append(IntervalParameter(self.result, min_v, max_v, self.separator, self.prefix))
                     
-        except Exception, e:
-            print e
+        except Exception as e:
+            print(e)
             return params
             
         return params
